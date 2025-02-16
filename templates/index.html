@@ -10,6 +10,70 @@
     <div class="container">
         <h1>Resume Download</h1>
         <a href="{{ url_for('download_resume') }}" class="download-button">Download Resume</a>
+        
+        <div class="jobs-section">
+            <h2>Work Experience</h2>
+            
+            <!-- Job List -->
+            <div class="job-list">
+                {% for job in jobs %}
+                <div class="job-card">
+                    <h3>{{ job.title }} at {{ job.company }}</h3>
+                    <p>{{ job.location }} | {{ job.dates }}</p>
+                    <ul>
+                        {% for point in job.points %}
+                        <li>{{ point }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Add Job Form -->
+            <div class="add-job-form">
+                <h3>Add New Job</h3>
+                <form action="{{ url_for('add_job') }}" method="POST">
+                    <div class="form-group">
+                        <label for="title">Job Title:</label>
+                        <input type="text" id="title" name="title" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="company">Company:</label>
+                        <input type="text" id="company" name="company" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="location">Location:</label>
+                        <input type="text" id="location" name="location" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="start_date">Start Date (YYYY-MM):</label>
+                        <input type="text" id="start_date" name="start_date" pattern="\d{4}-\d{2}" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="end_date">End Date (YYYY-MM):</label>
+                        <input type="text" id="end_date" name="end_date" pattern="\d{4}-\d{2}">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" name="current" id="current">
+                            Current Position
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="points">Job Points (one per line):</label>
+                        <textarea id="points" name="points" rows="4" required></textarea>
+                    </div>
+                    
+                    <button type="submit" class="submit-button">Add Job</button>
+                </form>
+            </div>
+        </div>
     </div>
 </body>
 </html>

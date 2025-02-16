@@ -1,57 +1,20 @@
-from flask import Flask, render_template, send_file
+from flask import Flask, render_template, send_file, request, redirect, url_for
 import os
 import subprocess
 from jinja2 import Environment, FileSystemLoader
+from database import get_all_jobs, add_job, add_job_points
 
 app = Flask(__name__)
 
-# Sample experience data (using your existing content)
-experience_data = {
-    'job1': {
-        'dates': 'Sept 2023 – Present',
-        'title': 'Vice President',
-        'company': 'Pathway Ventures',
-        'location': 'Fargo, ND',
-        'points': [
-            'Reduced time to render user buddy lists by 75\\% by implementing a prediction algorithm',
-            'Integrated iChat with Spotlight Search by creating a tool to extract metadata from saved chat transcripts and provide metadata to a system-wide search database',
-            'Redesigned chat file format and implemented backward compatibility for search'
-        ]
-    },
-    'job2': {
-        'dates': 'December 2022 – Aug 2024',
-        'title': 'Software Engineer Intern',
-        'company': 'WorkOdyssey',
-        'location': 'Fargo, ND',
-        'points': [
-            'Designed a UI for the VS open file switcher (Ctrl-Tab) and extended it to tool windows',
-            'Created a service to provide gradient across VS and VS add-ins, optimizing its performance via caching',
-            'Built an app to compute the similarity of all methods in a codebase, reducing the time from $\\mathcal{O}(n^2)$ to $\\mathcal{O}(n \\log n)$'
-        ]
-    },
-    'job3': {
-        'dates': 'June 2003 – Aug 2003',
-        'title': 'Web Developer Intern',
-        'company': 'NSF I-Corps',
-        'location': 'Fargo, ND',
-        'points': [
-            'Designed a UI for the VS open file switcher (Ctrl-Tab) and extended it to tool windows',
-            'Created a service to provide gradient across VS and VS add-ins, optimizing its performance via caching'
-        ]
-    },
-    'job4': {
-        'dates': 'June 2003 – Aug 2003',
-        'title': 'President',
-        'company': 'NDSU Entrepreneurship Club',
-        'location': 'Fargo, ND',
-        'points': [
-            'Designed a UI for the VS open file switcher (Ctrl-Tab) and extended it to tool windows',
-            'Created a service to provide gradient across VS and VS add-ins, optimizing its performance via caching'
-        ]
-    }
-}
-
 def generate_pdf():
+    # Get jobs from database
+    jobs = get_all_jobs()
+    
+    # Convert to template format
+    experience_data = {
+        f'job{i+1}': job for i, job in enumerate(jobs)
+    }
+    
     # Define paths
     temp_tex_path = os.path.join('static', 'temp_resume.tex')
     output_dir = 'static'
@@ -99,7 +62,29 @@ def generate_pdf():
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    jobs = get_all_jobs()
+    return render_template('index.html', jobs=jobs)
+
+@app.route('/add-job', methods=['POST'])
+def add_job():
+    # Get form data
+    title = request.form['title']
+    company = request.form['company']
+    location = request.form['location']
+    start_date = request.form['start_date']
+    end_date = request.form['end_date'] if request.form['end_date'] else None
+    current = 'current' in request.form
+    points = request.form['points'].split('\n')
+    
+    # Add job to database
+    job_id = add_job(title, company, location, start_date, end_date, current)
+    
+    # Add job points
+    for i, point in enumerate(points):
+        if point.strip():  # Skip empty lines
+            add_job_points(job_id, point.strip(), i+1)
+    
+    return redirect(url_for('index'))
 
 @app.route('/download-resume')
 def download_resume():

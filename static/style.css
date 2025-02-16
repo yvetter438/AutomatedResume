@@ -18,3 +18,69 @@
 .download-button:hover {
     background-color: #0056b3;
 }
+
+.jobs-section {
+    margin-top: 40px;
+    text-align: left;
+}
+
+.job-list {
+    margin-bottom: 40px;
+}
+
+.job-card {
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.job-card h3 {
+    margin: 0;
+    color: #007bff;
+}
+
+.job-card p {
+    color: #6c757d;
+    margin: 5px 0;
+}
+
+.job-card ul {
+    margin-top: 10px;
+}
+
+.add-job-form {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 5px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.form-group input[type="text"],
+.form-group textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.submit-button {
+    background-color: #28a745;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.submit-button:hover {
+    background-color: #218838;
+}

@@ -5,3 +5,4 @@ __pycache__/
 *.aux
 *.log
 static/temp_*
+resume.db
