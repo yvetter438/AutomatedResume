@@ -1,0 +1,9 @@
+name: resume-env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - flask
+  - jinja2
+  - pip
