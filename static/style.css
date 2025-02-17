@@ -141,3 +141,30 @@
 .add-button:hover {
     background-color: #218838;
 }
+
+.in-resume {
+    border-left: 4px solid #28a745;
+}
+
+.resume-badge {
+    background-color: #28a745;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    margin-right: 10px;
+}
+
+.point-badge {
+    background-color: #17a2b8;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    margin-right: 10px;
+}
+
+.job-actions, .point-actions {
+    display: flex;
+    align-items: center;
+}

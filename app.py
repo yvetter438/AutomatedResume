@@ -7,12 +7,21 @@ from database import get_all_jobs, add_job, add_job_points, get_next_order_num, 
 app = Flask(__name__)
 
 def generate_pdf():
-    # Get jobs from database
-    jobs = get_all_jobs()
+    # Get all jobs from database
+    all_jobs = get_all_jobs()
+    
+    # Take only first 4 jobs and their first 3 points
+    resume_jobs = all_jobs[:4]
     
     # Convert to template format
     experience_data = {
-        f'job{i+1}': job for i, job in enumerate(jobs)
+        f'job{i+1}': {
+            'dates': job['dates'],
+            'title': job['title'],
+            'company': job['company'],
+            'location': job['location'],
+            'points': job['resume_points']
+        } for i, job in enumerate(resume_jobs)
     }
     
     # Define paths

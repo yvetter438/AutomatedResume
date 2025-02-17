@@ -48,7 +48,8 @@ def get_all_jobs():
     c = conn.cursor()
     
     c.execute('''
-        SELECT j.*, GROUP_CONCAT(jp.point, '||') as points
+        SELECT j.*, GROUP_CONCAT(jp.point, '||') as points,
+               ROW_NUMBER() OVER (ORDER BY j.start_date DESC) as job_rank
         FROM jobs j
         LEFT JOIN job_points jp ON j.id = jp.job_id
         GROUP BY j.id
@@ -57,13 +58,16 @@ def get_all_jobs():
     
     jobs = []
     for row in c.fetchall():
+        points = row[7].split('||') if row[7] else []
         job = {
             'id': row[0],
             'title': row[1],
             'company': row[2],
             'location': row[3],
             'dates': format_dates(row[4], row[5], row[6]),
-            'points': row[7].split('||') if row[7] else []
+            'points': points,
+            'rank': row[8],  # Add rank to track position
+            'resume_points': points[:3] if points else []  # First 3 points only
         }
         jobs.append(job)
     

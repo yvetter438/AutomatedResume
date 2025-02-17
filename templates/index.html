@@ -17,21 +17,31 @@
             <!-- Job List -->
             <div class="job-list">
                 {% for job in jobs %}
-                <div class="job-card">
+                <div class="job-card {% if job.rank <= 4 %}in-resume{% endif %}">
                     <div class="job-header">
                         <h3>{{ job.title }} at {{ job.company }}</h3>
-                        <form action="{{ url_for('delete_job', job_id=job.id) }}" method="POST" class="delete-job">
-                            <button type="submit" class="delete-button">Delete Job</button>
-                        </form>
+                        <div class="job-actions">
+                            {% if job.rank <= 4 %}
+                            <span class="resume-badge">In Resume</span>
+                            {% endif %}
+                            <form action="{{ url_for('delete_job', job_id=job.id) }}" method="POST" class="delete-job">
+                                <button type="submit" class="delete-button">Delete Job</button>
+                            </form>
+                        </div>
                     </div>
                     <p>{{ job.location }} | {{ job.dates }}</p>
                     <ul>
                         {% for point in job.points %}
-                        <li class="point-item">
+                        <li class="point-item {% if loop.index <= 3 and job.rank <= 4 %}in-resume{% endif %}">
                             {{ point }}
-                            <form action="{{ url_for('delete_point', point_id=loop.index) }}" method="POST" class="delete-point">
-                                <button type="submit" class="delete-button small">×</button>
-                            </form>
+                            <div class="point-actions">
+                                {% if loop.index <= 3 and job.rank <= 4 %}
+                                <span class="point-badge">In Resume</span>
+                                {% endif %}
+                                <form action="{{ url_for('delete_point', point_id=loop.index) }}" method="POST" class="delete-point">
+                                    <button type="submit" class="delete-button small">×</button>
+                                </form>
+                            </div>
                         </li>
                         {% endfor %}
                     </ul>
