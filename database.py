@@ -101,5 +101,30 @@ def add_job(title, company, location, start_date, end_date=None, current=False):
     conn.close()
     return job_id
 
+def get_next_order_num(job_id):
+    conn = sqlite3.connect('resume.db')
+    c = conn.cursor()
+    c.execute('SELECT MAX(order_num) FROM job_points WHERE job_id = ?', (job_id,))
+    max_order = c.fetchone()[0]
+    conn.close()
+    return (max_order or 0) + 1
+
+def delete_job_point(point_id):
+    conn = sqlite3.connect('resume.db')
+    c = conn.cursor()
+    c.execute('DELETE FROM job_points WHERE id = ?', (point_id,))
+    conn.commit()
+    conn.close()
+
+def delete_job_and_points(job_id):
+    conn = sqlite3.connect('resume.db')
+    c = conn.cursor()
+    # Delete points first (due to foreign key constraint)
+    c.execute('DELETE FROM job_points WHERE job_id = ?', (job_id,))
+    # Then delete the job
+    c.execute('DELETE FROM jobs WHERE id = ?', (job_id,))
+    conn.commit()
+    conn.close()
+
 if __name__ == '__main__':
     init_db()

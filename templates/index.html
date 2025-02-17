@@ -18,13 +18,29 @@
             <div class="job-list">
                 {% for job in jobs %}
                 <div class="job-card">
-                    <h3>{{ job.title }} at {{ job.company }}</h3>
+                    <div class="job-header">
+                        <h3>{{ job.title }} at {{ job.company }}</h3>
+                        <form action="{{ url_for('delete_job', job_id=job.id) }}" method="POST" class="delete-job">
+                            <button type="submit" class="delete-button">Delete Job</button>
+                        </form>
+                    </div>
                     <p>{{ job.location }} | {{ job.dates }}</p>
                     <ul>
                         {% for point in job.points %}
-                        <li>{{ point }}</li>
+                        <li class="point-item">
+                            {{ point }}
+                            <form action="{{ url_for('delete_point', point_id=loop.index) }}" method="POST" class="delete-point">
+                                <button type="submit" class="delete-button small">×</button>
+                            </form>
+                        </li>
                         {% endfor %}
                     </ul>
+                    
+                    <!-- Add Point Form -->
+                    <form action="{{ url_for('add_point', job_id=job.id) }}" method="POST" class="add-point-form">
+                        <input type="text" name="point" placeholder="Add new bullet point" required>
+                        <button type="submit" class="add-button">Add Point</button>
+                    </form>
                 </div>
                 {% endfor %}
             </div>
@@ -32,7 +48,7 @@
             <!-- Add Job Form -->
             <div class="add-job-form">
                 <h3>Add New Job</h3>
-                <form action="{{ url_for('add_job') }}" method="POST">
+                <form action="{{ url_for('create_job') }}" method="POST">
                     <div class="form-group">
                         <label for="title">Job Title:</label>
                         <input type="text" id="title" name="title" required>

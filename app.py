@@ -2,7 +2,7 @@ from flask import Flask, render_template, send_file, request, redirect, url_for
 import os
 import subprocess
 from jinja2 import Environment, FileSystemLoader
-from database import get_all_jobs, add_job, add_job_points
+from database import get_all_jobs, add_job, add_job_points, get_next_order_num, delete_job_point, delete_job_and_points
 
 app = Flask(__name__)
 
@@ -66,7 +66,7 @@ def index():
     return render_template('index.html', jobs=jobs)
 
 @app.route('/add-job', methods=['POST'])
-def add_job():
+def create_job():
     # Get form data
     title = request.form['title']
     company = request.form['company']
@@ -90,6 +90,24 @@ def add_job():
 def download_resume():
     pdf_path = generate_pdf()
     return send_file(pdf_path, as_attachment=True)
+
+@app.route('/add-point/<int:job_id>', methods=['POST'])
+def add_point(job_id):
+    point = request.form['point']
+    # Get the next order number for this job
+    order_num = get_next_order_num(job_id)
+    add_job_points(job_id, point, order_num)
+    return redirect(url_for('index'))
+
+@app.route('/delete-point/<int:point_id>', methods=['POST'])
+def delete_point(point_id):
+    delete_job_point(point_id)
+    return redirect(url_for('index'))
+
+@app.route('/delete-job/<int:job_id>', methods=['POST'])
+def delete_job(job_id):
+    delete_job_and_points(job_id)
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     app.run(debug=True)
