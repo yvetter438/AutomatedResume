@@ -33,6 +33,8 @@
     border-radius: 5px;
     padding: 20px;
     margin-bottom: 20px;
+    cursor: move;
+    transition: transform 0.2s;
 }
 
 .job-card h3 {
@@ -167,4 +169,13 @@
 .job-actions, .point-actions {
     display: flex;
     align-items: center;
+}
+
+.job-card.dragging {
+    opacity: 0.5;
+    transform: scale(1.02);
+}
+
+.job-card:hover {
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }

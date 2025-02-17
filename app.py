@@ -1,8 +1,8 @@
-from flask import Flask, render_template, send_file, request, redirect, url_for
+from flask import Flask, render_template, send_file, request, redirect, url_for, jsonify
 import os
 import subprocess
 from jinja2 import Environment, FileSystemLoader
-from database import get_all_jobs, add_job, add_job_points, get_next_order_num, delete_job_point, delete_job_and_points
+from database import get_all_jobs, add_job, add_job_points, get_next_order_num, delete_job_point, delete_job_and_points, update_job_order
 
 app = Flask(__name__)
 
@@ -84,16 +84,17 @@ def create_job():
     end_date = request.form['end_date'] if request.form['end_date'] else None
     current = 'current' in request.form
     
-    # Split points by double newline and filter out empty strings
-    points = [p.strip() for p in request.form['points'].split('\n\n') if p.strip()]
+    # Normalize line endings and split by double newlines
+    points_text = request.form['points'].replace('\r\n', '\n')  # Normalize line endings
+    points = [p.strip().replace('\n', ' ') for p in points_text.split('\n\n') if p.strip()]
     
     # Add job to database
     job_id = add_job(title, company, location, start_date, end_date, current)
     
     # Add job points
     for i, point in enumerate(points):
-        if point.strip():  # Skip empty lines
-            add_job_points(job_id, point.strip(), i+1)
+        if point:  # Skip empty points
+            add_job_points(job_id, point, i+1)
     
     return redirect(url_for('index'))
 
@@ -119,6 +120,12 @@ def delete_point(point_id):
 def delete_job(job_id):
     delete_job_and_points(job_id)
     return redirect(url_for('index'))
+
+@app.route('/update-order', methods=['POST'])
+def update_order():
+    job_orders = request.json['jobs']
+    update_job_order(job_orders)
+    return jsonify({'status': 'success'})
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -5,6 +5,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Resume Generator</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        function dragStart(e) {
+            e.dataTransfer.setData('text/plain', e.target.id);
+            e.target.classList.add('dragging');
+        }
+
+        function dragEnd(e) {
+            e.target.classList.remove('dragging');
+        }
+
+        function dragOver(e) {
+            e.preventDefault();
+            const draggable = document.querySelector('.dragging');
+            const container = document.querySelector('.job-list');
+            const siblings = [...container.querySelectorAll('.job-card:not(.dragging)')];
+            
+            const nextSibling = siblings.find(sibling => {
+                const box = sibling.getBoundingClientRect();
+                const offset = e.clientY - box.top - box.height / 2;
+                return offset < 0;
+            });
+            
+            if (nextSibling) {
+                container.insertBefore(draggable, nextSibling);
+            } else {
+                container.appendChild(draggable);
+            }
+        }
+
+        function updateOrder() {
+            const jobs = document.querySelectorAll('.job-card');
+            const orderData = Array.from(jobs).map((job, index) => ({
+                id: job.dataset.jobId,
+                order: index + 1
+            }));
+
+            fetch('/update-order', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ jobs: orderData })
+            }).then(response => {
+                if (response.ok) {
+                    window.location.reload();
+                }
+            });
+        }
+    </script>
 </head>
 <body>
     <div class="container">
@@ -15,13 +64,18 @@
             <h2>Work Experience</h2>
             
             <!-- Job List -->
-            <div class="job-list">
+            <div class="job-list" ondragover="dragOver(event)" ondrop="updateOrder()">
                 {% for job in jobs %}
-                <div class="job-card {% if job.rank <= 4 %}in-resume{% endif %}">
+                <div class="job-card {% if job.display_order <= 4 %}in-resume{% endif %}"
+                     draggable="true"
+                     ondragstart="dragStart(event)"
+                     ondragend="dragEnd(event)"
+                     data-job-id="{{ job.id }}"
+                     id="job-{{ job.id }}">
                     <div class="job-header">
                         <h3>{{ job.title }} at {{ job.company }}</h3>
                         <div class="job-actions">
-                            {% if job.rank <= 4 %}
+                            {% if job.display_order <= 4 %}
                             <span class="resume-badge">In Resume</span>
                             {% endif %}
                             <form action="{{ url_for('delete_job', job_id=job.id) }}" method="POST" class="delete-job">
@@ -32,13 +86,13 @@
                     <p>{{ job.location }} | {{ job.dates }}</p>
                     <ul>
                         {% for point in job.points %}
-                        <li class="point-item {% if loop.index <= 3 and job.rank <= 4 %}in-resume{% endif %}">
+                        <li class="point-item {% if loop.index <= 3 and job.display_order <= 4 %}in-resume{% endif %}">
                             {{ point }}
                             <div class="point-actions">
-                                {% if loop.index <= 3 and job.rank <= 4 %}
+                                {% if loop.index <= 3 and job.display_order <= 4 %}
                                 <span class="point-badge">In Resume</span>
                                 {% endif %}
-                                <form action="{{ url_for('delete_point', point_id=loop.index) }}" method="POST" class="delete-point">
+                                <form action="{{ url_for('delete_point', point_id=job.point_ids[loop.index0]) }}" method="POST" class="delete-point">
                                     <button type="submit" class="delete-button small">×</button>
                                 </form>
                             </div>
@@ -94,11 +148,12 @@
                     <div class="form-group">
                         <label for="points">Job Points (separate points with blank line):</label>
                         <textarea id="points" name="points" rows="8" required 
-                            placeholder="First job point here
+                            placeholder="First job point here (press Enter twice for new point)
 
 Second job point here
 
 Third job point here"></textarea>
+                        <small class="form-help">Press Enter twice to create a new point</small>
                     </div>
                     
                     <button type="submit" class="submit-button">Add Job</button>
