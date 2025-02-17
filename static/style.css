@@ -179,3 +179,20 @@
 .job-card:hover {
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
+
+.points-list {
+    min-height: 10px;
+    padding: 10px 0;
+}
+
+.point-item {
+    cursor: move;
+    padding: 5px;
+    transition: transform 0.2s;
+}
+
+.point-item.dragging-point {
+    opacity: 0.5;
+    transform: scale(1.02);
+    background-color: #f8f9fa;
+}

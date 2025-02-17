@@ -53,6 +53,55 @@
                 }
             });
         }
+
+        function dragStartPoint(e) {
+            e.dataTransfer.setData('text/plain', e.target.id);
+            e.target.classList.add('dragging-point');
+        }
+
+        function dragEndPoint(e) {
+            e.target.classList.remove('dragging-point');
+        }
+
+        function dragOverPoint(e, jobId) {
+            e.preventDefault();
+            e.stopPropagation();  // Prevent job dragging while moving points
+            const draggable = document.querySelector('.dragging-point');
+            const container = document.querySelector(`#points-${jobId}`);
+            const siblings = [...container.querySelectorAll('.point-item:not(.dragging-point)')];
+            
+            const nextSibling = siblings.find(sibling => {
+                const box = sibling.getBoundingClientRect();
+                const offset = e.clientY - box.top - box.height / 2;
+                return offset < 0;
+            });
+            
+            if (nextSibling) {
+                container.insertBefore(draggable, nextSibling);
+            } else {
+                container.appendChild(draggable);
+            }
+        }
+
+        function updatePointOrder(jobId) {
+            const points = document.querySelectorAll(`#points-${jobId} .point-item`);
+            const orderData = Array.from(points).map((point, index) => ({
+                id: point.dataset.pointId,
+                order: index + 1
+            }));
+
+            fetch(`/update-point-order/${jobId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ points: orderData })
+            }).then(response => {
+                if (response.ok) {
+                    window.location.reload();
+                }
+            });
+        }
     </script>
 </head>
 <body>
@@ -84,9 +133,14 @@
                         </div>
                     </div>
                     <p>{{ job.location }} | {{ job.dates }}</p>
-                    <ul>
+                    <ul id="points-{{ job.id }}" class="points-list" ondragover="dragOverPoint(event, {{ job.id }})" ondrop="updatePointOrder({{ job.id }})">
                         {% for point in job.points %}
-                        <li class="point-item {% if loop.index <= 3 and job.display_order <= 4 %}in-resume{% endif %}">
+                        <li class="point-item {% if loop.index <= 3 and job.display_order <= 4 %}in-resume{% endif %}"
+                            draggable="true"
+                            ondragstart="dragStartPoint(event)"
+                            ondragend="dragEndPoint(event)"
+                            data-point-id="{{ job.point_ids[loop.index0] }}"
+                            id="point-{{ job.point_ids[loop.index0] }}">
                             {{ point }}
                             <div class="point-actions">
                                 {% if loop.index <= 3 and job.display_order <= 4 %}

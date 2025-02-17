@@ -62,7 +62,7 @@ def get_all_jobs():
     c.execute('''
         SELECT j.id, j.title, j.company, j.location, j.start_date, 
                j.end_date, j.current, j.display_order,
-               GROUP_CONCAT(jp.id || ':' || jp.point, '||') as points
+               GROUP_CONCAT(jp.id || ':' || jp.point, '||' ORDER BY jp.order_num) as points
         FROM jobs j
         LEFT JOIN job_points jp ON j.id = jp.job_id
         GROUP BY j.id
@@ -165,6 +165,20 @@ def update_job_order(job_orders):
             SET display_order = ? 
             WHERE id = ?
         ''', (job['order'], job['id']))
+    
+    conn.commit()
+    conn.close()
+
+def update_job_point_order(job_id, point_orders):
+    conn = sqlite3.connect('resume.db')
+    c = conn.cursor()
+    
+    for point in point_orders:
+        c.execute('''
+            UPDATE job_points 
+            SET order_num = ? 
+            WHERE id = ? AND job_id = ?
+        ''', (point['order'], point['id'], job_id))
     
     conn.commit()
     conn.close()

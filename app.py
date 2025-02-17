@@ -2,7 +2,7 @@ from flask import Flask, render_template, send_file, request, redirect, url_for,
 import os
 import subprocess
 from jinja2 import Environment, FileSystemLoader
-from database import get_all_jobs, add_job, add_job_points, get_next_order_num, delete_job_point, delete_job_and_points, update_job_order
+from database import get_all_jobs, add_job, add_job_points, get_next_order_num, delete_job_point, delete_job_and_points, update_job_order, update_job_point_order
 
 app = Flask(__name__)
 
@@ -125,6 +125,12 @@ def delete_job(job_id):
 def update_order():
     job_orders = request.json['jobs']
     update_job_order(job_orders)
+    return jsonify({'status': 'success'})
+
+@app.route('/update-point-order/<int:job_id>', methods=['POST'])
+def update_point_order(job_id):
+    point_orders = request.json['points']
+    update_job_point_order(job_id, point_orders)
     return jsonify({'status': 'success'})
 
 if __name__ == '__main__':
