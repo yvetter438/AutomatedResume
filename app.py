@@ -74,7 +74,9 @@ def create_job():
     start_date = request.form['start_date']
     end_date = request.form['end_date'] if request.form['end_date'] else None
     current = 'current' in request.form
-    points = request.form['points'].split('\n')
+    
+    # Split points by double newline and filter out empty strings
+    points = [p.strip() for p in request.form['points'].split('\n\n') if p.strip()]
     
     # Add job to database
     job_id = add_job(title, company, location, start_date, end_date, current)
