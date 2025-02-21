@@ -3,6 +3,7 @@ import os
 import subprocess
 from jinja2 import Environment, FileSystemLoader
 from database import get_all_jobs, add_job, add_job_points, get_next_order_num, delete_job_point, delete_job_and_points, update_job_order, update_job_point_order
+from ai_service import test_ai_connection, AIModel
 
 app = Flask(__name__)
 
@@ -132,6 +133,16 @@ def update_point_order(job_id):
     point_orders = request.json['points']
     update_job_point_order(job_id, point_orders)
     return jsonify({'status': 'success'})
+
+@app.route('/test-ai/<model_type>')
+def test_ai(model_type):
+    model = AIModel.DEEPSEEK if model_type == 'deepseek' else AIModel.OPENAI
+    success, message = test_ai_connection(model)
+    return jsonify({
+        'success': success,
+        'message': message,
+        'model': model_type
+    })
 
 if __name__ == '__main__':
     app.run(debug=True)

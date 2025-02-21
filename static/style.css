@@ -256,3 +256,18 @@ input:checked + .slider:before {
 .slider.round:before {
     border-radius: 50%;
 }
+
+.ai-controls {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.model-switch {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}

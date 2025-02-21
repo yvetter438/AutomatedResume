@@ -105,8 +105,14 @@
 
         function handleModeChange(isAIMode) {
             const label = document.getElementById('modeLabel');
+            const modelSelection = document.getElementById('modelSelection');
             label.textContent = isAIMode ? 'AI-Optimized Resume' : 'Handcrafted Resume';
-            // Will handle showing/hiding AI input forms later
+            modelSelection.style.display = isAIMode ? 'flex' : 'none';
+        }
+
+        function handleModelChange(isDeepseek) {
+            const label = document.getElementById('modelLabel');
+            label.textContent = isDeepseek ? 'Deepseek' : 'OpenAI';
         }
     </script>
 </head>
@@ -115,12 +121,22 @@
         <h1>Resume Download</h1>
         <a href="{{ url_for('download_resume') }}" class="download-button">Download Resume</a>
         
-        <div class="mode-switch">
-            <label class="switch">
-                <input type="checkbox" id="resumeMode" onchange="handleModeChange(this.checked)">
-                <span class="slider round"></span>
-            </label>
-            <span id="modeLabel">Handcrafted Resume</span>
+        <div class="ai-controls">
+            <div class="mode-switch">
+                <label class="switch">
+                    <input type="checkbox" id="resumeMode" onchange="handleModeChange(this.checked)">
+                    <span class="slider round"></span>
+                </label>
+                <span id="modeLabel">Handcrafted Resume</span>
+            </div>
+            
+            <div class="model-switch" id="modelSelection" style="display: none;">
+                <label class="switch">
+                    <input type="checkbox" id="modelMode" onchange="handleModelChange(this.checked)">
+                    <span class="slider round"></span>
+                </label>
+                <span id="modelLabel">OpenAI</span>
+            </div>
         </div>
         
         <div class="jobs-section">
