@@ -106,13 +106,82 @@
         function handleModeChange(isAIMode) {
             const label = document.getElementById('modeLabel');
             const modelSelection = document.getElementById('modelSelection');
+            const optimizeButton = document.getElementById('optimizeButton');
+            
             label.textContent = isAIMode ? 'AI-Optimized Resume' : 'Handcrafted Resume';
             modelSelection.style.display = isAIMode ? 'flex' : 'none';
+            optimizeButton.style.display = isAIMode ? 'block' : 'none';
+            
+            // Update view based on mode
+            updateResumeView(isAIMode);
         }
 
         function handleModelChange(isDeepseek) {
             const label = document.getElementById('modelLabel');
             label.textContent = isDeepseek ? 'Deepseek' : 'OpenAI';
+        }
+
+        function updateResumeView(isAIMode) {
+            const mode = isAIMode ? 'ai' : 'handcrafted';
+            const modelType = document.getElementById('modelMode').checked ? 'deepseek' : 'openai';
+            const jobList = document.querySelector('.job-list');
+            
+            // Add loading state
+            jobList.innerHTML = '<div class="loading">Loading...</div>';
+            
+            fetch(`/get-resume-view?mode=${mode}&model_type=${modelType}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.text();
+                })
+                .then(html => {
+                    jobList.innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    jobList.innerHTML = '<div class="error">Failed to load resume view</div>';
+                });
+        }
+
+        function optimizeResume() {
+            const modelType = document.getElementById('modelMode').checked ? 'deepseek' : 'openai';
+            const optimizeButton = document.getElementById('optimizeButton');
+            
+            // Disable button during optimization
+            optimizeButton.disabled = true;
+            optimizeButton.textContent = 'Optimizing...';
+            
+            fetch('/optimize-resume', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `model_type=${modelType}`
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    updateResumeView(true);
+                } else {
+                    throw new Error(data.error || 'Failed to optimize resume');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to optimize resume: ' + error.message);
+            })
+            .finally(() => {
+                // Re-enable button
+                optimizeButton.disabled = false;
+                optimizeButton.textContent = 'Optimize Resume';
+            });
         }
     </script>
 </head>
@@ -244,6 +313,14 @@ Third job point here"></textarea>
                 </form>
             </div>
         </div>
+
+        <!-- Add optimize button -->
+        <button id="optimizeButton" 
+                onclick="optimizeResume()" 
+                class="optimize-button" 
+                style="display: none;">
+            Optimize Resume
+        </button>
     </div>
 </body>
 </html>

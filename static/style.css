@@ -271,3 +271,35 @@ input:checked + .slider:before {
     align-items: center;
     gap: 10px;
 }
+
+.optimize-button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 20px auto;
+    display: none;
+}
+
+.optimize-button:hover {
+    background-color: #45a049;
+}
+
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+}
+
+.error {
+    text-align: center;
+    padding: 20px;
+    color: #dc3545;
+}
+
+.optimize-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}

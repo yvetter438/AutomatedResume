@@ -29,6 +29,31 @@ def init_db():
         )
     ''')
     
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS ai_job_orders (
+            id INTEGER PRIMARY KEY,
+            job_id INTEGER,
+            ai_display_order INTEGER,
+            model_type TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (job_id) REFERENCES jobs (id)
+        )
+    ''')
+    
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS ai_point_orders (
+            id INTEGER PRIMARY KEY,
+            job_id INTEGER,
+            point_id INTEGER,
+            ai_order_num INTEGER,
+            relevance_score FLOAT,
+            model_type TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (job_id) REFERENCES jobs (id),
+            FOREIGN KEY (point_id) REFERENCES job_points (id)
+        )
+    ''')
+    
     # Sample data
     c.execute('''INSERT OR IGNORE INTO jobs 
                 (id, title, company, location, start_date, end_date, current)
@@ -182,6 +207,72 @@ def update_job_point_order(job_id, point_orders):
     
     conn.commit()
     conn.close()
+
+def store_ai_ordering(job_orders, point_orders, model_type):
+    conn = sqlite3.connect('resume.db')
+    c = conn.cursor()
+    
+    # Store job orders
+    for job_id, order in job_orders.items():
+        c.execute('''
+            INSERT INTO ai_job_orders (job_id, ai_display_order, model_type)
+            VALUES (?, ?, ?)
+        ''', (job_id, order, model_type))
+    
+    # Store point orders
+    for job_id, points in point_orders.items():
+        for point_id, order_data in points.items():
+            c.execute('''
+                INSERT INTO ai_point_orders 
+                (job_id, point_id, ai_order_num, relevance_score, model_type)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (job_id, point_id, order_data['order'], 
+                  order_data['score'], model_type))
+    
+    conn.commit()
+    conn.close()
+
+def get_ai_ordered_jobs(model_type):
+    conn = sqlite3.connect('resume.db')
+    c = conn.cursor()
+    
+    # Get jobs with AI ordering
+    c.execute('''
+        SELECT j.id, j.title, j.company, j.location, j.start_date, 
+               j.end_date, j.current, COALESCE(ao.ai_display_order, j.display_order) as display_order,
+               GROUP_CONCAT(jp.id || ':' || jp.point, '||' ORDER BY COALESCE(apo.ai_order_num, jp.order_num)) as points
+        FROM jobs j
+        LEFT JOIN job_points jp ON j.id = jp.job_id
+        LEFT JOIN ai_job_orders ao ON j.id = ao.job_id AND ao.model_type = ?
+        LEFT JOIN ai_point_orders apo ON jp.id = apo.point_id AND apo.model_type = ?
+        GROUP BY j.id
+        ORDER BY display_order
+    ''', (model_type, model_type))
+    
+    jobs = []
+    for row in c.fetchall():
+        points_data = []
+        if row[8]:  # If there are points
+            for point_str in row[8].split('||'):
+                if ':' in point_str:
+                    point_id, point_text = point_str.split(':', 1)
+                    points_data.append({'id': point_id, 'text': point_text})
+        
+        job = {
+            'id': row[0],
+            'title': row[1],
+            'company': row[2],
+            'location': row[3],
+            'dates': format_dates(row[4], row[5], row[6]),
+            'points': [p['text'] for p in points_data],
+            'point_ids': [p['id'] for p in points_data],
+            'display_order': row[7],
+            'resume_points': [p['text'] for p in points_data[:3]] if points_data else []
+        }
+        jobs.append(job)
+    
+    conn.close()
+    return jobs
 
 if __name__ == '__main__':
     init_db()

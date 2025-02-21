@@ -2,8 +2,12 @@ from flask import Flask, render_template, send_file, request, redirect, url_for,
 import os
 import subprocess
 from jinja2 import Environment, FileSystemLoader
-from database import get_all_jobs, add_job, add_job_points, get_next_order_num, delete_job_point, delete_job_and_points, update_job_order, update_job_point_order
-from ai_service import test_ai_connection, AIModel
+from database import (
+    get_all_jobs, add_job, add_job_points, get_next_order_num,
+    delete_job_point, delete_job_and_points, update_job_order,
+    update_job_point_order, get_ai_ordered_jobs, store_ai_ordering
+)
+from ai_service import test_ai_connection, AIModel, AIService
 
 app = Flask(__name__)
 
@@ -143,6 +147,57 @@ def test_ai(model_type):
         'message': message,
         'model': model_type
     })
+
+@app.route('/optimize-resume', methods=['POST'])
+def optimize_resume():
+    try:
+        # Get selected model type from request
+        model_type = request.form.get('model_type', 'openai')
+        ai_model = AIModel.DEEPSEEK if model_type == 'deepseek' else AIModel.OPENAI
+        
+        # Initialize AI service
+        ai_service = AIService(ai_model)
+        
+        # Get all jobs
+        jobs = get_all_jobs()
+        
+        # Get AI optimization
+        success, optimization = ai_service.optimize_resume(jobs)
+        
+        if success and optimization.get('job_order') and optimization.get('point_orders'):
+            # Store the optimized ordering
+            try:
+                store_ai_ordering(
+                    optimization['job_order'],
+                    optimization['point_orders'],
+                    model_type
+                )
+                return jsonify({'success': True})
+            except Exception as e:
+                print(f"Database error: {str(e)}")
+                return jsonify({'success': False, 'error': 'Failed to store optimization results'})
+        else:
+            error_msg = optimization if isinstance(optimization, str) else 'Failed to get optimization results'
+            return jsonify({'success': False, 'error': error_msg})
+            
+    except Exception as e:
+        print(f"Optimization error: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/get-resume-view')
+def get_resume_view():
+    mode = request.args.get('mode', 'handcrafted')
+    model_type = request.args.get('model_type', 'openai')
+    
+    try:
+        if mode == 'handcrafted':
+            jobs = get_all_jobs()
+        else:
+            jobs = get_ai_ordered_jobs(model_type)
+        
+        return render_template('_jobs_list.html', jobs=jobs)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
