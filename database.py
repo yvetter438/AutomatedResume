@@ -212,6 +212,10 @@ def store_ai_ordering(job_orders, point_orders, model_type):
     conn = sqlite3.connect('resume.db')
     c = conn.cursor()
     
+    # Clear old orderings for this model type
+    c.execute('DELETE FROM ai_job_orders WHERE model_type = ?', (model_type,))
+    c.execute('DELETE FROM ai_point_orders WHERE model_type = ?', (model_type,))
+    
     # Store job orders
     for job_id, order in job_orders.items():
         c.execute('''
@@ -240,23 +244,30 @@ def get_ai_ordered_jobs(model_type):
     c.execute('''
         SELECT j.id, j.title, j.company, j.location, j.start_date, 
                j.end_date, j.current, COALESCE(ao.ai_display_order, j.display_order) as display_order,
-               GROUP_CONCAT(jp.id || ':' || jp.point, '||' ORDER BY COALESCE(apo.ai_order_num, jp.order_num)) as points
+               GROUP_CONCAT(
+                   jp.id || ':' || jp.point, 
+                   '||' 
+                   ORDER BY COALESCE(apo.ai_order_num, jp.order_num), jp.id
+               ) as points
         FROM jobs j
         LEFT JOIN job_points jp ON j.id = jp.job_id
         LEFT JOIN ai_job_orders ao ON j.id = ao.job_id AND ao.model_type = ?
         LEFT JOIN ai_point_orders apo ON jp.id = apo.point_id AND apo.model_type = ?
         GROUP BY j.id
-        ORDER BY display_order
+        ORDER BY COALESCE(ao.ai_display_order, j.display_order), j.id
     ''', (model_type, model_type))
     
     jobs = []
     for row in c.fetchall():
         points_data = []
         if row[8]:  # If there are points
+            seen_points = set()  # Track unique points
             for point_str in row[8].split('||'):
                 if ':' in point_str:
                     point_id, point_text = point_str.split(':', 1)
-                    points_data.append({'id': point_id, 'text': point_text})
+                    if point_id not in seen_points:  # Only add if not seen
+                        points_data.append({'id': point_id, 'text': point_text})
+                        seen_points.add(point_id)
         
         job = {
             'id': row[0],

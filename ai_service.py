@@ -42,9 +42,16 @@ class AIService:
             print(f"API Error: {str(e)}")  # Debug print
             return False, str(e)
 
-    def optimize_resume(self, jobs):
-        system_prompt = """You are a resume optimization expert. Your task is to analyze the jobs and their bullet points, 
-        then return a JSON object with optimized ordering. Format your response exactly like this:
+    def optimize_resume(self, jobs, job_description='', story=''):
+        system_prompt = """You are a resume optimization expert. Your task is to analyze the jobs and their bullet points,
+        and optimize them based on the provided job description and personal story. 
+        
+        Consider:
+        1. Job Description: Match experience with job requirements
+        2. Personal Story: Emphasize experiences that support this narrative
+        3. Impact: Prioritize points showing quantifiable results
+        
+        Return a JSON object with optimized ordering in this exact format:
         {
             "job_order": {
                 "1": 1,  // job_id: order_number (1 is highest priority)
@@ -56,8 +63,7 @@ class AIService:
                     "2": {"order": 2, "score": 0.85}
                 }
             }
-        }
-        Order jobs by relevance and impact, and order bullet points to highlight the most impressive achievements first."""
+        }"""
         
         jobs_data = {
             "jobs": [{
@@ -66,7 +72,9 @@ class AIService:
                 "company": job["company"],
                 "points": [{"id": point_id, "text": point} 
                           for point_id, point in zip(job["point_ids"], job["points"])]
-            } for job in jobs]
+            } for job in jobs],
+            "job_description": job_description,
+            "personal_story": story
         }
         
         try:
@@ -74,7 +82,13 @@ class AIService:
             
             success, response = self.create_completion([
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Please optimize this resume data and return in the specified JSON format: {str(jobs_data)}"}
+                {"role": "user", "content": f"""
+                    Job Description: {job_description}
+                    
+                    Personal Story Goal: {story}
+                    
+                    Please optimize this resume data and return in the specified JSON format: {str(jobs_data)}
+                """}
             ])
             
             print("AI Response:", response)  # Debug print

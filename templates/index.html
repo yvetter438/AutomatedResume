@@ -106,13 +106,14 @@
         function handleModeChange(isAIMode) {
             const label = document.getElementById('modeLabel');
             const modelSelection = document.getElementById('modelSelection');
+            const aiInputs = document.getElementById('aiInputs');
             const optimizeButton = document.getElementById('optimizeButton');
             
             label.textContent = isAIMode ? 'AI-Optimized Resume' : 'Handcrafted Resume';
             modelSelection.style.display = isAIMode ? 'flex' : 'none';
+            aiInputs.style.display = isAIMode ? 'block' : 'none';
             optimizeButton.style.display = isAIMode ? 'block' : 'none';
             
-            // Update view based on mode
             updateResumeView(isAIMode);
         }
 
@@ -147,6 +148,8 @@
 
         function optimizeResume() {
             const modelType = document.getElementById('modelMode').checked ? 'deepseek' : 'openai';
+            const jobDescription = document.getElementById('jobDescription').value;
+            const myStory = document.getElementById('myStory').value;
             const optimizeButton = document.getElementById('optimizeButton');
             
             // Disable button during optimization
@@ -156,9 +159,13 @@
             fetch('/optimize-resume', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Content-Type': 'application/json',
                 },
-                body: `model_type=${modelType}`
+                body: JSON.stringify({
+                    model_type: modelType,
+                    job_description: jobDescription,
+                    story: myStory
+                })
             })
             .then(response => {
                 if (!response.ok) {
@@ -214,6 +221,30 @@
                 </label>
                 <span id="modelLabel">OpenAI</span>
             </div>
+            
+            <div class="ai-inputs" id="aiInputs" style="display: none;">
+                <div class="input-group">
+                    <label for="jobDescription">Job Description</label>
+                    <textarea 
+                        id="jobDescription" 
+                        placeholder="Paste the job description here to help optimize your resume for this role..."
+                        rows="6"
+                    ></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label for="myStory">My Story</label>
+                    <textarea 
+                        id="myStory" 
+                        placeholder="What story do you want your resume to tell? (e.g., 'Show my growth as a leader' or 'Highlight my entrepreneurial experience')"
+                        rows="4"
+                    ></textarea>
+                </div>
+            </div>
+            
+            <button id="optimizeButton" onclick="optimizeResume()" class="optimize-button" style="display: none;">
+                Optimize Resume
+            </button>
         </div>
         
         <div class="jobs-section">
@@ -321,14 +352,6 @@ Third job point here"></textarea>
                 </form>
             </div>
         </div>
-
-        <!-- Add optimize button -->
-        <button id="optimizeButton" 
-                onclick="optimizeResume()" 
-                class="optimize-button" 
-                style="display: none;">
-            Optimize Resume
-        </button>
     </div>
 </body>
 </html>

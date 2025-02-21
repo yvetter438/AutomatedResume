@@ -158,31 +158,30 @@ def test_ai(model_type):
 @app.route('/optimize-resume', methods=['POST'])
 def optimize_resume():
     try:
-        # Get selected model type from request
-        model_type = request.form.get('model_type', 'openai')
-        ai_model = AIModel.DEEPSEEK if model_type == 'deepseek' else AIModel.OPENAI
+        data = request.get_json()
+        model_type = data.get('model_type', 'openai')
+        job_description = data.get('job_description', '')
+        story = data.get('story', '')
         
-        # Initialize AI service
+        ai_model = AIModel.DEEPSEEK if model_type == 'deepseek' else AIModel.OPENAI
         ai_service = AIService(ai_model)
         
-        # Get all jobs
         jobs = get_all_jobs()
         
-        # Get AI optimization
-        success, optimization = ai_service.optimize_resume(jobs)
+        # Get AI optimization with context
+        success, optimization = ai_service.optimize_resume(
+            jobs, 
+            job_description=job_description, 
+            story=story
+        )
         
         if success and optimization.get('job_order') and optimization.get('point_orders'):
-            # Store the optimized ordering
-            try:
-                store_ai_ordering(
-                    optimization['job_order'],
-                    optimization['point_orders'],
-                    model_type
-                )
-                return jsonify({'success': True})
-            except Exception as e:
-                print(f"Database error: {str(e)}")
-                return jsonify({'success': False, 'error': 'Failed to store optimization results'})
+            store_ai_ordering(
+                optimization['job_order'],
+                optimization['point_orders'],
+                model_type
+            )
+            return jsonify({'success': True})
         else:
             error_msg = optimization if isinstance(optimization, str) else 'Failed to get optimization results'
             return jsonify({'success': False, 'error': error_msg})

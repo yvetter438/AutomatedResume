@@ -277,14 +277,21 @@ input:checked + .slider:before {
     color: white;
     padding: 10px 20px;
     border: none;
-    border-radius: 5px;
+    border-radius: 4px;
     cursor: pointer;
-    margin: 20px auto;
+    margin-top: 15px;
+    width: 100%;
+    font-size: 16px;
     display: none;
 }
 
 .optimize-button:hover {
     background-color: #45a049;
+}
+
+.optimize-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
 }
 
 .loading {
@@ -299,7 +306,36 @@ input:checked + .slider:before {
     color: #dc3545;
 }
 
-.optimize-button:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
+.ai-inputs {
+    background: #f5f5f5;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+    width: 300px;
+}
+
+.input-group {
+    margin-bottom: 15px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #333;
+}
+
+.input-group textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    resize: vertical;
+    font-size: 14px;
+}
+
+.input-group textarea:focus {
+    border-color: #4CAF50;
+    outline: none;
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.2);
 }
