@@ -183,12 +183,20 @@
                 optimizeButton.textContent = 'Optimize Resume';
             });
         }
+
+        function downloadResume() {
+            const isAIMode = document.getElementById('resumeMode').checked;
+            const modelType = document.getElementById('modelMode').checked ? 'deepseek' : 'openai';
+            const mode = isAIMode ? 'ai' : 'handcrafted';
+            
+            window.location.href = `/download-resume?mode=${mode}&model_type=${modelType}`;
+        }
     </script>
 </head>
 <body>
     <div class="container">
         <h1>Resume Download</h1>
-        <a href="{{ url_for('download_resume') }}" class="download-button">Download Resume</a>
+        <a href="#" onclick="downloadResume()" class="download-button">Download Resume</a>
         
         <div class="ai-controls">
             <div class="mode-switch">

@@ -11,9 +11,12 @@ from ai_service import test_ai_connection, AIModel, AIService
 
 app = Flask(__name__)
 
-def generate_pdf():
-    # Get all jobs from database
-    all_jobs = get_all_jobs()
+def generate_pdf(mode='handcrafted', model_type='openai'):
+    # Get jobs based on mode
+    if mode == 'handcrafted':
+        all_jobs = get_all_jobs()
+    else:
+        all_jobs = get_ai_ordered_jobs(model_type)
     
     # Take only first 4 jobs and their first 3 points
     resume_jobs = all_jobs[:4]
@@ -105,7 +108,11 @@ def create_job():
 
 @app.route('/download-resume')
 def download_resume():
-    pdf_path = generate_pdf()
+    # Check if we're in AI mode
+    mode = request.args.get('mode', 'handcrafted')
+    model_type = request.args.get('model_type', 'openai')
+    
+    pdf_path = generate_pdf(mode, model_type)
     return send_file(pdf_path, as_attachment=True)
 
 @app.route('/add-point/<int:job_id>', methods=['POST'])
