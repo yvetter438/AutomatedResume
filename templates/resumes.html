@@ -30,8 +30,10 @@
 <div id="newApplicationModal" class="modal">
     <div class="modal-content">
         <span class="close" onclick="closeNewApplicationModal()">&times;</span>
-        <h2>New Application</h2>
         <form id="newApplicationForm" onsubmit="createApplication(event)" enctype="multipart/form-data">
+            <button type="submit" class="create-application-button">
+                <i class="fas fa-plus"></i> Create Application
+            </button>
             <div class="form-group">
                 <label for="company">Company</label>
                 <input type="text" id="company" name="company" required>
@@ -56,7 +58,6 @@
                 <label for="story">Your Story/Focus</label>
                 <textarea id="story" name="story" rows="3"></textarea>
             </div>
-            <button type="submit" class="submit-button">Create Application</button>
         </form>
     </div>
 </div>
