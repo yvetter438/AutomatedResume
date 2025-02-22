@@ -8,6 +8,7 @@ from database import (
     update_job_point_order, get_ai_ordered_jobs, store_ai_ordering
 )
 from ai_service import test_ai_connection, AIModel, AIService
+import sqlite3
 
 app = Flask(__name__)
 
@@ -204,6 +205,97 @@ def get_resume_view():
         return render_template('_jobs_list.html', jobs=jobs)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/resumes')
+def resumes():
+    conn = sqlite3.connect('resume.db')
+    c = conn.cursor()
+    
+    c.execute('''
+        SELECT id, company, title, application_date, status
+        FROM job_applications
+        ORDER BY application_date DESC
+    ''')
+    
+    applications = [{
+        'id': row[0],
+        'company': row[1],
+        'title': row[2],
+        'date': row[3],
+        'status': row[4]
+    } for row in c.fetchall()]
+    
+    conn.close()
+    return render_template('resumes.html', applications=applications)
+
+@app.route('/application/<int:app_id>')
+def view_application(app_id):
+    conn = sqlite3.connect('resume.db')
+    c = conn.cursor()
+    
+    c.execute('''
+        SELECT id, company, title, application_date, status, job_description, story, model_type
+        FROM job_applications
+        WHERE id = ?
+    ''', (app_id,))
+    
+    row = c.fetchone()
+    application = {
+        'id': row[0],
+        'company': row[1],
+        'title': row[2],
+        'date': row[3],
+        'status': row[4],
+        'job_description': row[5],
+        'story': row[6],
+        'model_type': row[7]
+    }
+    
+    conn.close()
+    return jsonify(application)
+
+@app.route('/update-status/<int:app_id>', methods=['POST'])
+def update_status(app_id):
+    status = request.json.get('status')
+    conn = sqlite3.connect('resume.db')
+    c = conn.cursor()
+    
+    c.execute('''
+        UPDATE job_applications
+        SET status = ?
+        WHERE id = ?
+    ''', (status, app_id))
+    
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
+
+@app.route('/create-application', methods=['POST'])
+def create_application():
+    try:
+        data = request.get_json()
+        conn = sqlite3.connect('resume.db')
+        c = conn.cursor()
+        
+        c.execute('''
+            INSERT INTO job_applications 
+            (company, title, application_date, job_description, story)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (
+            data['company'],
+            data['title'],
+            data['application_date'],
+            data.get('job_description', ''),
+            data.get('story', '')
+        ))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        print(f"Error creating application: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
 
 if __name__ == '__main__':
     app.run(debug=True)

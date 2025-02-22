@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resume Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+    <div class="header-nav">
+        {% if request.endpoint == 'index' %}
+            <a href="{{ url_for('resumes') }}" class="nav-icon" title="View Applications">
+                <i class="fas fa-briefcase"></i>
+            </a>
+        {% else %}
+            <a href="{{ url_for('index') }}" class="nav-icon" title="Resume Builder">
+                <i class="fas fa-file-alt"></i>
+            </a>
+        {% endif %}
+    </div>
+
+    {% block content %}{% endblock %}
+</body>
+</html> 

@@ -54,6 +54,20 @@ def init_db():
         )
     ''')
     
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS job_applications (
+            id INTEGER PRIMARY KEY,
+            company TEXT NOT NULL,
+            title TEXT NOT NULL,
+            application_date TEXT NOT NULL,
+            status TEXT CHECK(status IN ('applied', 'interviewing', 'rejected', 'accepted')) NOT NULL DEFAULT 'applied',
+            job_description TEXT,
+            story TEXT,
+            model_type TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
     # Sample data
     c.execute('''INSERT OR IGNORE INTO jobs 
                 (id, title, company, location, start_date, end_date, current)
@@ -285,5 +299,11 @@ def get_ai_ordered_jobs(model_type):
     conn.close()
     return jobs
 
-if __name__ == '__main__':
+# Add this function to help with initialization
+def initialize_database():
+    """Initialize all database tables"""
     init_db()
+    print("Database initialized successfully!")
+
+if __name__ == "__main__":
+    initialize_database()

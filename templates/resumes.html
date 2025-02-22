@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="applications-container">
+    <div class="applications-header">
+        <h2>Job Applications</h2>
+        <button onclick="showNewApplicationModal()" class="create-button">
+            <i class="fas fa-plus"></i> New Application
+        </button>
+    </div>
+
+    {% if applications %}
+    <div class="applications-grid">
+        {% for app in applications %}
+        <div class="application-card" onclick="viewApplication({{ app.id }})">
+            <div class="status-flag {{ app.status }}">
+                {{ app.status }}
+            </div>
+            <h3>{{ app.company }}</h3>
+            <p class="title">{{ app.title }}</p>
+            <p class="date">{{ app.date }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-applications">
+        <p>No applications yet. Click the "New Application" button to get started!</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- New Application Modal -->
+<div id="newApplicationModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeNewApplicationModal()">&times;</span>
+        <h2>New Application</h2>
+        <form id="newApplicationForm" onsubmit="createApplication(event)">
+            <div class="form-group">
+                <label for="company">Company</label>
+                <input type="text" id="company" required>
+            </div>
+            <div class="form-group">
+                <label for="title">Position Title</label>
+                <input type="text" id="title" required>
+            </div>
+            <div class="form-group">
+                <label for="applicationDate">Application Date</label>
+                <input type="date" id="applicationDate" required>
+            </div>
+            <div class="form-group">
+                <label for="jobDescription">Job Description</label>
+                <textarea id="jobDescription" rows="4"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="story">Your Story/Focus</label>
+                <textarea id="story" rows="3"></textarea>
+            </div>
+            <button type="submit" class="submit-button">Create Application</button>
+        </form>
+    </div>
+</div>
+
+<!-- View/Edit Application Modal -->
+<div id="applicationModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeApplicationModal()">&times;</span>
+        <h2 id="modalCompany"></h2>
+        <p id="modalTitle"></p>
+        <p id="modalDate"></p>
+        <div class="status-selector">
+            <label>Status:</label>
+            <select id="statusSelect" onchange="handleStatusChange(this.value)">
+                <option value="applied">Applied</option>
+                <option value="interviewing">Interviewing</option>
+                <option value="rejected">Rejected</option>
+                <option value="accepted">Accepted</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentApplicationId = null;
+
+function showNewApplicationModal() {
+    document.getElementById('newApplicationModal').style.display = 'block';
+    document.getElementById('applicationDate').valueAsDate = new Date();
+}
+
+function closeNewApplicationModal() {
+    document.getElementById('newApplicationModal').style.display = 'none';
+}
+
+function createApplication(event) {
+    event.preventDefault();
+    
+    const data = {
+        company: document.getElementById('company').value,
+        title: document.getElementById('title').value,
+        application_date: document.getElementById('applicationDate').value,
+        job_description: document.getElementById('jobDescription').value,
+        story: document.getElementById('story').value
+    };
+    
+    fetch('/create-application', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Failed to create application');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to create application');
+    });
+}
+
+function closeApplicationModal() {
+    document.getElementById('applicationModal').style.display = 'none';
+    currentApplicationId = null;
+}
+
+function viewApplication(id) {
+    currentApplicationId = id;
+    fetch(`/application/${id}`)
+        .then(response => response.json())
+        .then(app => {
+            document.getElementById('modalCompany').textContent = app.company;
+            document.getElementById('modalTitle').textContent = app.title;
+            document.getElementById('modalDate').textContent = app.date;
+            document.getElementById('statusSelect').value = app.status;
+            document.getElementById('applicationModal').style.display = 'block';
+        });
+}
+
+function handleStatusChange(newStatus) {
+    if (!currentApplicationId) return;
+    
+    updateStatus(currentApplicationId, newStatus)
+        .then(() => {
+            closeApplicationModal();
+            location.reload();
+        });
+}
+
+async function updateStatus(id, status) {
+    const response = await fetch(`/update-status/${id}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: status })
+    });
+    return response.json();
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('applicationModal');
+    const newAppModal = document.getElementById('newApplicationModal');
+    if (event.target === modal) {
+        closeApplicationModal();
+    } else if (event.target === newAppModal) {
+        closeNewApplicationModal();
+    }
+}
+</script>
+{% endblock %} 
