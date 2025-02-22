@@ -4,9 +4,6 @@
 <div class="applications-container">
     <div class="applications-header">
         <h2>Job Applications</h2>
-        <button onclick="showNewApplicationModal()" class="create-button">
-            <i class="fas fa-plus"></i> New Application
-        </button>
     </div>
 
     {% if applications %}
@@ -24,7 +21,7 @@
     </div>
     {% else %}
     <div class="no-applications">
-        <p>No applications yet. Click the "New Application" button to get started!</p>
+        <p>No applications yet. Click the plus button to get started!</p>
     </div>
     {% endif %}
 </div>

@@ -3,24 +3,51 @@
 <head>
     <title>Resume Generator</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='resumix-logo.svg') }}">
     <!-- Fallback for browsers that don't support SVG favicons -->
     <link rel="alternate icon" href="{{ url_for('static', filename='resumix-logo.svg') }}">
 </head>
 <body>
-    <div class="header-nav">
-        {% if request.endpoint == 'index' %}
-            <a href="{{ url_for('resumes') }}" class="nav-icon" title="View Applications">
-                <i class="fas fa-briefcase"></i>
-            </a>
-        {% else %}
-            <a href="{{ url_for('index') }}" class="nav-icon" title="Resume Builder">
-                <i class="fas fa-file-alt"></i>
-            </a>
-        {% endif %}
+    <div class="app-container">
+        <div class="sidebar">
+            <div class="sidebar-middle">
+                <button onclick="switchPage()" class="nav-button">
+                    <i class="fas {{ 'fa-briefcase' if request.path == '/resumes' else 'fa-file-alt' }}"></i>
+                </button>
+                <button onclick="showNewItemModal()" class="add-button">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <div class="sidebar-bottom">
+                <button class="settings-button">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+        </div>
+        <div class="main-content">
+            {% block content %}{% endblock %}
+        </div>
     </div>
 
-    {% block content %}{% endblock %}
+    <script>
+    function switchPage() {
+        const path = window.location.pathname;
+        if (path === '/') {
+            window.location.href = '/resumes';
+        } else if (path === '/resumes') {
+            window.location.href = '/';
+        }
+    }
+
+    function showNewItemModal() {
+        const path = window.location.pathname;
+        if (path === '/') {
+            showNewJobModal();
+        } else if (path === '/resumes') {
+            showNewApplicationModal();
+        }
+    }
+    </script>
 </body>
 </html> 

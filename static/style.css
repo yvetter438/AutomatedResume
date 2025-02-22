@@ -524,3 +524,82 @@ input:checked + .slider:before {
 .action-button:hover {
     opacity: 0.9;
 }
+
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 80px;
+    background-color: #f0f0f0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    height: 100vh;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-middle {
+    padding-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.sidebar-bottom {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    width: 40px;
+}
+
+.nav-button, .add-button, .settings-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background-color: #3498db;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.nav-button:hover, .add-button:hover {
+    background-color: #2980b9;
+}
+
+.settings-button {
+    background-color: #95a5a6;
+}
+
+.settings-button:hover {
+    background-color: #7f8c8d;
+}
+
+.main-content {
+    flex: 1;
+    padding: 20px;
+    margin-left: 80px;
+    background-color: #ffffff;
+    min-height: 100vh;
+}
+
+/* Update existing container styles */
+.jobs-container, .applications-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Make sure modals appear above sidebar */
+.modal {
+    z-index: 1000;
+}
