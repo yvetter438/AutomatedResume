@@ -64,9 +64,16 @@ def init_db():
             job_description TEXT,
             story TEXT,
             model_type TEXT,
+            resume_path TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    
+    # Check if resume_path column exists, if not add it
+    c.execute("PRAGMA table_info(job_applications)")
+    columns = [column[1] for column in c.fetchall()]
+    if 'resume_path' not in columns:
+        c.execute('ALTER TABLE job_applications ADD COLUMN resume_path TEXT')
     
     # Sample data
     c.execute('''INSERT OR IGNORE INTO jobs 

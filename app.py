@@ -9,8 +9,13 @@ from database import (
 )
 from ai_service import test_ai_connection, AIModel, AIService
 import sqlite3
+from werkzeug.utils import secure_filename
+from datetime import datetime
 
 app = Flask(__name__)
+
+UPLOAD_FOLDER = 'static/resumes'
+ALLOWED_EXTENSIONS = {'pdf'}
 
 def generate_pdf(mode='handcrafted', model_type='openai'):
     # Get jobs based on mode
@@ -270,23 +275,44 @@ def update_status(app_id):
     conn.close()
     return jsonify({'success': True})
 
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 @app.route('/create-application', methods=['POST'])
 def create_application():
     try:
-        data = request.get_json()
+        # Ensure upload directory exists
+        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+        
+        # Handle file upload
+        resume_path = None
+        if 'resume' in request.files:
+            file = request.files['resume']
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                filename = f"{timestamp}_{filename}"
+                filepath = os.path.join(UPLOAD_FOLDER, filename)
+                file.save(filepath)
+                resume_path = filepath
+
+        # Get other form data
+        data = request.form
+        
         conn = sqlite3.connect('resume.db')
         c = conn.cursor()
         
         c.execute('''
             INSERT INTO job_applications 
-            (company, title, application_date, job_description, story)
-            VALUES (?, ?, ?, ?, ?)
+            (company, title, application_date, job_description, story, resume_path)
+            VALUES (?, ?, ?, ?, ?, ?)
         ''', (
             data['company'],
             data['title'],
             data['application_date'],
             data.get('job_description', ''),
-            data.get('story', '')
+            data.get('story', ''),
+            resume_path
         ))
         
         conn.commit()
@@ -295,6 +321,44 @@ def create_application():
         return jsonify({'success': True})
     except Exception as e:
         print(f"Error creating application: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/download-application-resume/<int:app_id>')
+def download_application_resume(app_id):
+    conn = sqlite3.connect('resume.db')
+    c = conn.cursor()
+    
+    c.execute('SELECT resume_path FROM job_applications WHERE id = ?', (app_id,))
+    result = c.fetchone()
+    conn.close()
+    
+    if not result or not result[0]:
+        return "No resume found", 404
+        
+    return send_file(result[0], as_attachment=True)
+
+@app.route('/delete-application/<int:app_id>', methods=['POST'])
+def delete_application(app_id):
+    try:
+        conn = sqlite3.connect('resume.db')
+        c = conn.cursor()
+        
+        # Get resume path before deleting
+        c.execute('SELECT resume_path FROM job_applications WHERE id = ?', (app_id,))
+        result = c.fetchone()
+        
+        # Delete application
+        c.execute('DELETE FROM job_applications WHERE id = ?', (app_id,))
+        conn.commit()
+        conn.close()
+        
+        # Delete resume file if it exists
+        if result and result[0] and os.path.exists(result[0]):
+            os.remove(result[0])
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        print(f"Error deleting application: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
 
 if __name__ == '__main__':

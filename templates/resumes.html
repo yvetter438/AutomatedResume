@@ -34,33 +34,37 @@
     <div class="modal-content">
         <span class="close" onclick="closeNewApplicationModal()">&times;</span>
         <h2>New Application</h2>
-        <form id="newApplicationForm" onsubmit="createApplication(event)">
+        <form id="newApplicationForm" onsubmit="createApplication(event)" enctype="multipart/form-data">
             <div class="form-group">
                 <label for="company">Company</label>
-                <input type="text" id="company" required>
+                <input type="text" id="company" name="company" required>
             </div>
             <div class="form-group">
                 <label for="title">Position Title</label>
-                <input type="text" id="title" required>
+                <input type="text" id="title" name="title" required>
             </div>
             <div class="form-group">
                 <label for="applicationDate">Application Date</label>
-                <input type="date" id="applicationDate" required>
+                <input type="date" id="applicationDate" name="application_date" required>
+            </div>
+            <div class="form-group">
+                <label for="resume">Resume (PDF)</label>
+                <input type="file" id="resume" name="resume" accept=".pdf">
             </div>
             <div class="form-group">
                 <label for="jobDescription">Job Description</label>
-                <textarea id="jobDescription" rows="4"></textarea>
+                <textarea id="jobDescription" name="job_description" rows="4"></textarea>
             </div>
             <div class="form-group">
                 <label for="story">Your Story/Focus</label>
-                <textarea id="story" rows="3"></textarea>
+                <textarea id="story" name="story" rows="3"></textarea>
             </div>
             <button type="submit" class="submit-button">Create Application</button>
         </form>
     </div>
 </div>
 
-<!-- View/Edit Application Modal -->
+<!-- View Application Modal -->
 <div id="applicationModal" class="modal">
     <div class="modal-content">
         <span class="close" onclick="closeApplicationModal()">&times;</span>
@@ -75,6 +79,14 @@
                 <option value="rejected">Rejected</option>
                 <option value="accepted">Accepted</option>
             </select>
+        </div>
+        <div class="modal-actions">
+            <button onclick="downloadResume()" class="action-button download">
+                <i class="fas fa-download"></i> Download Resume
+            </button>
+            <button onclick="deleteApplication()" class="action-button delete">
+                <i class="fas fa-trash"></i> Delete Application
+            </button>
         </div>
     </div>
 </div>
@@ -94,20 +106,11 @@ function closeNewApplicationModal() {
 function createApplication(event) {
     event.preventDefault();
     
-    const data = {
-        company: document.getElementById('company').value,
-        title: document.getElementById('title').value,
-        application_date: document.getElementById('applicationDate').value,
-        job_description: document.getElementById('jobDescription').value,
-        story: document.getElementById('story').value
-    };
+    const formData = new FormData(event.target);
     
     fetch('/create-application', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
+        body: formData
     })
     .then(response => response.json())
     .then(data => {
@@ -160,6 +163,33 @@ async function updateStatus(id, status) {
         body: JSON.stringify({ status: status })
     });
     return response.json();
+}
+
+function downloadResume() {
+    if (!currentApplicationId) return;
+    window.location.href = `/download-application-resume/${currentApplicationId}`;
+}
+
+function deleteApplication() {
+    if (!currentApplicationId) return;
+    
+    if (confirm('Are you sure you want to delete this application?')) {
+        fetch(`/delete-application/${currentApplicationId}`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to delete application');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to delete application');
+        });
+    }
 }
 
 // Close modal when clicking outside
