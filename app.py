@@ -95,8 +95,8 @@ def create_job():
     company = request.form['company']
     location = request.form['location']
     start_date = request.form['start_date']
-    end_date = request.form['end_date'] if request.form['end_date'] and not 'current' in request.form else None
     current = 'current' in request.form
+    end_date = None if current else request.form.get('end_date')
     
     # Get points array directly
     points = request.form.getlist('points[]')

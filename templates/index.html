@@ -221,8 +221,10 @@
 
         function toggleEndDate() {
             const endDate = document.getElementById('end_date');
-            endDate.disabled = document.getElementById('current').checked;
-            if (endDate.disabled) {
+            const isPresent = document.getElementById('current').checked;
+            
+            endDate.disabled = isPresent;
+            if (isPresent) {
                 endDate.value = '';
             }
         }
