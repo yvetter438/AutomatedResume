@@ -107,22 +107,39 @@
         }
 
         function handleModeChange(isAIMode) {
-            const label = document.getElementById('modeLabel');
             const modelSelection = document.getElementById('modelSelection');
             const aiInputs = document.getElementById('aiInputs');
             const optimizeButton = document.getElementById('optimizeButton');
+            const aiControls = document.querySelector('.ai-controls');
+            const jobsSection = document.querySelector('.jobs-section');
             
-            label.textContent = isAIMode ? 'AI-Optimized Resume' : 'Handcrafted Resume';
-            modelSelection.style.display = isAIMode ? 'flex' : 'none';
-            aiInputs.style.display = isAIMode ? 'block' : 'none';
-            optimizeButton.style.display = isAIMode ? 'block' : 'none';
+            if (isAIMode) {
+                // Expand AI controls
+                aiControls.classList.remove('collapsed');
+                jobsSection.classList.remove('expanded');
+                
+                // Show AI controls content
+                setTimeout(() => {
+                    modelSelection.style.display = 'flex';
+                    aiInputs.style.display = 'block';
+                    optimizeButton.style.display = 'block';
+                }, 50); // Small delay to ensure animation starts first
+            } else {
+                // Hide AI controls content
+                modelSelection.style.display = 'none';
+                aiInputs.style.display = 'none';
+                optimizeButton.style.display = 'none';
+                
+                // Collapse AI controls
+                aiControls.classList.add('collapsed');
+                jobsSection.classList.add('expanded');
+            }
             
             updateResumeView(isAIMode);
         }
 
         function handleModelChange(isDeepseek) {
-            const label = document.getElementById('modelLabel');
-            label.textContent = isDeepseek ? 'Deepseek' : 'OpenAI';
+            updateResumeView(document.getElementById('resumeMode').checked);
         }
 
         function updateResumeView(isAIMode) {
@@ -251,57 +268,23 @@
                 closeNewJobModal();
             }
         }
+
+        function toggleAIControls() {
+            const aiControls = document.querySelector('.ai-controls');
+            const mainContent = document.querySelector('.main-content');
+            
+            aiControls.classList.toggle('collapsed');
+            mainContent.classList.toggle('ai-mode');
+        }
     </script>
 </head>
 <body>
     <div class="container">
-        <h1>Resume Download</h1>
+        <h1>Resumix</h1>
         <a href="#" onclick="downloadResume()" class="download-button">Download Resume</a>
         
-        <div class="ai-controls">
-            <div class="mode-switch">
-                <label class="switch">
-                    <input type="checkbox" id="resumeMode" onchange="handleModeChange(this.checked)">
-                    <span class="slider round"></span>
-                </label>
-                <span id="modeLabel">Handcrafted Resume</span>
-            </div>
-            
-            <div class="model-switch" id="modelSelection" style="display: none;">
-                <label class="switch">
-                    <input type="checkbox" id="modelMode" onchange="handleModelChange(this.checked)">
-                    <span class="slider round"></span>
-                </label>
-                <span id="modelLabel">OpenAI</span>
-            </div>
-            
-            <div class="ai-inputs" id="aiInputs" style="display: none;">
-                <div class="input-group">
-                    <label for="jobDescription">Job Description</label>
-                    <textarea 
-                        id="jobDescription" 
-                        placeholder="Paste the job description here to help optimize your resume for this role..."
-                        rows="6"
-                    ></textarea>
-                </div>
-                
-                <div class="input-group">
-                    <label for="myStory">My Story</label>
-                    <textarea 
-                        id="myStory" 
-                        placeholder="What story do you want your resume to tell? (e.g., 'Show my growth as a leader' or 'Highlight my entrepreneurial experience')"
-                        rows="4"
-                    ></textarea>
-                </div>
-            </div>
-            
-            <button id="optimizeButton" onclick="optimizeResume()" class="optimize-button" style="display: none;">
-                Optimize Resume
-            </button>
-        </div>
-        
         <div class="jobs-section">
-            <h2>Work Experience</h2>
+            
             
             <!-- Job List -->
             <div class="job-list" ondragover="dragOver(event)" ondrop="updateOrder()">
@@ -353,6 +336,44 @@
                 </div>
                 {% endfor %}
             </div>
+        </div>
+    </div>
+
+    <!-- Move AI controls outside container -->
+    <div class="ai-trigger">
+        <button onclick="toggleAIControls()" class="ai-toggle-button">
+            <img src="{{ url_for('static', filename='resumix-logo.svg') }}" alt="AI" class="ai-icon">
+            <i class="fas fa-layer-group base-icon"></i>
+        </button>
+    </div>
+
+    <div class="ai-controls collapsed">
+        <div class="ai-header">
+            <div class="model-switch">
+                <label class="switch-container">
+                    <input type="checkbox" id="modelMode" onchange="handleModelChange(this.checked)">
+                    <div class="switch-icons">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg" class="openai-icon" alt="OpenAI">
+                        <img src="https://avatars.githubusercontent.com/u/140648165?s=200&v=4" class="deepseek-icon" alt="Deepseek">
+                    </div>
+                </label>
+            </div>
+        </div>
+        
+        <div class="ai-inputs">
+            <div class="input-group">
+                <label for="jobDescription">Job Description</label>
+                <textarea id="jobDescription" placeholder="Paste the job description here..." rows="6"></textarea>
+            </div>
+            
+            <div class="input-group">
+                <label for="myStory">My Story</label>
+                <textarea id="myStory" placeholder="What story do you want your resume to tell?" rows="4"></textarea>
+            </div>
+            
+            <button onclick="optimizeResume()" class="optimize-button">
+                Optimize Resume
+            </button>
         </div>
     </div>
 

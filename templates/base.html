@@ -18,6 +18,12 @@
                 <button onclick="showNewItemModal()" class="add-button">
                     <i class="fas fa-plus"></i>
                 </button>
+                {% if request.path == '/' %}
+                <button onclick="toggleAIMode()" class="mode-button">
+                    <img src="{{ url_for('static', filename='resumix-logo.svg') }}" alt="AI" class="ai-icon">
+                    <i class="fas fa-layer-group base-icon"></i>
+                </button>
+                {% endif %}
             </div>
             <div class="sidebar-bottom">
                 <button class="settings-button">
@@ -46,6 +52,26 @@
             showNewJobModal();
         } else if (path === '/resumes') {
             showNewApplicationModal();
+        }
+    }
+
+    function toggleAIMode() {
+        const modeButton = document.querySelector('.mode-button');
+        const aiControls = document.querySelector('.ai-controls');
+        const jobsSection = document.querySelector('.jobs-section');
+        
+        modeButton.classList.toggle('base');
+        
+        if (modeButton.classList.contains('base')) {
+            // Base mode - hide AI controls, center content
+            aiControls.style.transform = 'translateX(100%)';
+            jobsSection.classList.remove('ai-mode');
+            jobsSection.classList.add('base-mode');
+        } else {
+            // AI mode - show AI controls, shift content left
+            aiControls.style.transform = 'translateX(0)';
+            jobsSection.classList.add('ai-mode');
+            jobsSection.classList.remove('base-mode');
         }
     }
     </script>
