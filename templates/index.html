@@ -235,6 +235,22 @@
                 removeButtons[0].style.display = 'none';
             }
         }
+
+        function showNewJobModal() {
+            document.getElementById('newJobModal').style.display = 'block';
+        }
+
+        function closeNewJobModal() {
+            document.getElementById('newJobModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('newJobModal');
+            if (event.target === modal) {
+                closeNewJobModal();
+            }
+        }
     </script>
 </head>
 <body>
@@ -337,60 +353,61 @@
                 </div>
                 {% endfor %}
             </div>
+        </div>
+    </div>
 
-            <!-- Add Job Form -->
-            <div class="add-job-form">
-                <h3>Add New Job</h3>
-                <form action="{{ url_for('create_job') }}" method="POST" id="jobForm">
-                    <div class="form-group">
-                        <label for="title">Job Title:</label>
-                        <input type="text" id="title" name="title" required>
+    <!-- New Job Modal -->
+    <div id="newJobModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeNewJobModal()">&times;</span>
+            <form action="{{ url_for('create_job') }}" method="POST" id="jobForm">
+                <button type="submit" class="create-job-button">
+                    <i class="fas fa-plus"></i> Create Job
+                </button>
+                <div class="form-group">
+                    <label for="title">Job Title:</label>
+                    <input type="text" id="title" name="title" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="company">Company:</label>
+                    <input type="text" id="company" name="company" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="location">Location:</label>
+                    <input type="text" id="location" name="location" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group date-group">
+                        <label for="start_date">Start Date:</label>
+                        <input type="month" id="start_date" name="start_date" required>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="company">Company:</label>
-                        <input type="text" id="company" name="company" required>
+                    <div class="form-group date-group">
+                        <label for="end_date">End Date:</label>
+                        <input type="month" id="end_date" name="end_date">
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="location">Location:</label>
-                        <input type="text" id="location" name="location" required>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group date-group">
-                            <label for="start_date">Start Date:</label>
-                            <input type="month" id="start_date" name="start_date" required>
+                </div>
+                <div class="current-checkbox">
+                    <input type="checkbox" name="current" id="current" onchange="toggleEndDate()">
+                    <span>Present</span>
+                </div>
+                
+                <div class="form-group">
+                    <label>Job Points:</label>
+                    <div id="points-container">
+                        <div class="point-input-group">
+                            <input type="text" name="points[]" placeholder="Enter job point" required>
+                            <button type="button" class="remove-point" onclick="removePoint(this)" style="display: none;">×</button>
                         </div>
-                        
-                        <div class="form-group date-group">
-                            <label for="end_date">End Date:</label>
-                            <div class="end-date-container">
-                                <input type="month" id="end_date" name="end_date">
-                                <label class="current-checkbox">
-                                    <input type="checkbox" name="current" id="current" onchange="toggleEndDate()">
-                                    Present
-                                </label>
-                            </div>
-                        </div>
                     </div>
-                    
-                    <div class="form-group">
-                        <label>Job Points:</label>
-                        <div id="points-container">
-                            <div class="point-input-group">
-                                <input type="text" name="points[]" placeholder="Enter job point" required>
-                                <button type="button" class="remove-point" onclick="removePoint(this)" style="display: none;">×</button>
-                            </div>
-                        </div>
-                        <button type="button" onclick="addPoint()" class="add-point-button">
-                            <i class="fas fa-plus"></i> Add Another Point
-                        </button>
-                    </div>
-                    
-                    <button type="submit" class="submit-button">Add Job</button>
-                </form>
-            </div>
+                    <button type="button" onclick="addPoint()" class="add-point-button">
+                        <i class="fas fa-plus"></i> Add Another Point
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </body>
