@@ -201,6 +201,40 @@
             
             window.location.href = `/download-resume?mode=${mode}&model_type=${modelType}`;
         }
+
+        function toggleEndDate() {
+            const endDate = document.getElementById('end_date');
+            endDate.disabled = document.getElementById('current').checked;
+            if (endDate.disabled) {
+                endDate.value = '';
+            }
+        }
+
+        function addPoint() {
+            const container = document.getElementById('points-container');
+            const newPoint = document.createElement('div');
+            newPoint.className = 'point-input-group';
+            newPoint.innerHTML = `
+                <input type="text" name="points[]" placeholder="Enter job point" required>
+                <button type="button" class="remove-point" onclick="removePoint(this)">×</button>
+            `;
+            container.appendChild(newPoint);
+            
+            // Show all remove buttons if there's more than one point
+            const removeButtons = container.querySelectorAll('.remove-point');
+            removeButtons.forEach(button => button.style.display = removeButtons.length > 1 ? 'block' : 'none');
+        }
+
+        function removePoint(button) {
+            const container = document.getElementById('points-container');
+            button.parentElement.remove();
+            
+            // Hide the last remove button if only one point remains
+            const removeButtons = container.querySelectorAll('.remove-point');
+            if (removeButtons.length === 1) {
+                removeButtons[0].style.display = 'none';
+            }
+        }
     </script>
 </head>
 <body>
@@ -307,14 +341,14 @@
             <!-- Add Job Form -->
             <div class="add-job-form">
                 <h3>Add New Job</h3>
-                <form action="{{ url_for('create_job') }}" method="POST">
+                <form action="{{ url_for('create_job') }}" method="POST" id="jobForm">
                     <div class="form-group">
                         <label for="title">Job Title:</label>
                         <input type="text" id="title" name="title" required>
                     </div>
                     
                     <div class="form-group">
-                        <label for="company">Company: Yeat</label>
+                        <label for="company">Company:</label>
                         <input type="text" id="company" name="company" required>
                     </div>
                     
@@ -323,32 +357,35 @@
                         <input type="text" id="location" name="location" required>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="start_date">Start Date (YYYY-MM):</label>
-                        <input type="text" id="start_date" name="start_date" pattern="\d{4}-\d{2}" required>
+                    <div class="form-row">
+                        <div class="form-group date-group">
+                            <label for="start_date">Start Date:</label>
+                            <input type="month" id="start_date" name="start_date" required>
+                        </div>
+                        
+                        <div class="form-group date-group">
+                            <label for="end_date">End Date:</label>
+                            <div class="end-date-container">
+                                <input type="month" id="end_date" name="end_date">
+                                <label class="current-checkbox">
+                                    <input type="checkbox" name="current" id="current" onchange="toggleEndDate()">
+                                    Present
+                                </label>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="form-group">
-                        <label for="end_date">End Date (YYYY-MM):</label>
-                        <input type="text" id="end_date" name="end_date" pattern="\d{4}-\d{2}">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" name="current" id="current">
-                            Current Position
-                        </label>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="points">Job Points (separate points with blank line):</label>
-                        <textarea id="points" name="points" rows="8" required 
-                            placeholder="First job point here (press Enter twice for new point)
-
-Second job point here
-
-Third job point here"></textarea>
-                        <small class="form-help">Press Enter twice to create a new point</small>
+                        <label>Job Points:</label>
+                        <div id="points-container">
+                            <div class="point-input-group">
+                                <input type="text" name="points[]" placeholder="Enter job point" required>
+                                <button type="button" class="remove-point" onclick="removePoint(this)" style="display: none;">×</button>
+                            </div>
+                        </div>
+                        <button type="button" onclick="addPoint()" class="add-point-button">
+                            <i class="fas fa-plus"></i> Add Another Point
+                        </button>
                     </div>
                     
                     <button type="submit" class="submit-button">Add Job</button>

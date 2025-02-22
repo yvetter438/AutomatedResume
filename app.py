@@ -95,20 +95,19 @@ def create_job():
     company = request.form['company']
     location = request.form['location']
     start_date = request.form['start_date']
-    end_date = request.form['end_date'] if request.form['end_date'] else None
+    end_date = request.form['end_date'] if request.form['end_date'] and not 'current' in request.form else None
     current = 'current' in request.form
     
-    # Normalize line endings and split by double newlines
-    points_text = request.form['points'].replace('\r\n', '\n')  # Normalize line endings
-    points = [p.strip().replace('\n', ' ') for p in points_text.split('\n\n') if p.strip()]
+    # Get points array directly
+    points = request.form.getlist('points[]')
     
     # Add job to database
     job_id = add_job(title, company, location, start_date, end_date, current)
     
     # Add job points
     for i, point in enumerate(points):
-        if point:  # Skip empty points
-            add_job_points(job_id, point, i+1)
+        if point.strip():  # Skip empty points
+            add_job_points(job_id, point.strip(), i+1)
     
     return redirect(url_for('index'))
 
