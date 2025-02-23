@@ -5,7 +5,8 @@ from jinja2 import Environment, FileSystemLoader
 from database import (
     get_all_jobs, add_job, add_job_points, get_next_order_num,
     delete_job_point, delete_job_and_points, update_job_order,
-    update_job_point_order, get_ai_ordered_jobs, store_ai_ordering
+    update_job_point_order, get_ai_ordered_jobs, store_ai_ordering,
+    update_point_order_db
 )
 from ai_service import test_ai_connection, AIModel, AIService
 import sqlite3
@@ -168,32 +169,34 @@ def optimize_resume():
         job_description = data.get('job_description', '')
         story = data.get('story', '')
         
-        ai_model = AIModel.DEEPSEEK if model_type == 'deepseek' else AIModel.OPENAI
-        ai_service = AIService(ai_model)
-        
+        # Get all jobs from database
         jobs = get_all_jobs()
         
-        # Get AI optimization with context
-        success, optimization = ai_service.optimize_resume(
-            jobs, 
-            job_description=job_description, 
-            story=story
-        )
+        # Initialize AI service with the selected model
+        ai_service = AIService(AIModel.DEEPSEEK if model_type == 'deepseek' else AIModel.OPENAI)
         
-        if success and optimization.get('job_order') and optimization.get('point_orders'):
-            store_ai_ordering(
-                optimization['job_order'],
-                optimization['point_orders'],
-                model_type
-            )
+        # Call optimize_resume method
+        success, result = ai_service.optimize_resume(jobs, job_description, story)
+        
+        if success:
+            # Update job orders in database
+            update_job_order(result['job_order'])
+            
+            # Update point orders
+            for job_id, points in result['point_orders'].items():
+                for point_id, order_data in points.items():
+                    update_point_order_db(point_id, order_data['order'])
+            
+            # Store the AI ordering
+            store_ai_ordering(result['job_order'], result['point_orders'], model_type)
+            
             return jsonify({'success': True})
         else:
-            error_msg = optimization if isinstance(optimization, str) else 'Failed to get optimization results'
-            return jsonify({'success': False, 'error': error_msg})
+            return jsonify({'success': False, 'error': result})
             
     except Exception as e:
-        print(f"Optimization error: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        print(f"Error in optimize_resume: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/get-resume-view')
 def get_resume_view():
@@ -359,6 +362,13 @@ def delete_application(app_id):
     except Exception as e:
         print(f"Error deleting application: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/generate-pdf')
+def generate_pdf_route():
+    mode = request.args.get('mode', 'handcrafted')
+    model_type = request.args.get('model_type', 'openai')
+    pdf_path = generate_pdf(mode, model_type)
+    return send_file(pdf_path, as_attachment=True, download_name='resume.pdf')
 
 if __name__ == '__main__':
     app.run(debug=True)

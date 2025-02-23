@@ -167,10 +167,15 @@
         }
 
         function optimizeResume() {
-            const modelType = document.getElementById('modelMode').checked ? 'deepseek' : 'openai';
             const jobDescription = document.getElementById('jobDescription').value;
             const myStory = document.getElementById('myStory').value;
             const optimizeButton = document.getElementById('optimizeButton');
+            const modelType = document.getElementById('modelMode').checked ? 'deepseek' : 'openai';
+            
+            if (!jobDescription.trim() || !myStory.trim()) {
+                alert('Please fill in both the Job Description and My Story fields');
+                return;
+            }
             
             // Disable button during optimization
             optimizeButton.disabled = true;
@@ -195,7 +200,7 @@
             })
             .then(data => {
                 if (data.success) {
-                    updateResumeView(true);
+                    location.reload(); // Reload to show updated ordering
                 } else {
                     throw new Error(data.error || 'Failed to optimize resume');
                 }
@@ -212,11 +217,11 @@
         }
 
         function downloadResume() {
-            const isAIMode = document.getElementById('resumeMode').checked;
+            const isAIMode = document.querySelector('.ai-controls').classList.contains('collapsed');
             const modelType = document.getElementById('modelMode').checked ? 'deepseek' : 'openai';
             const mode = isAIMode ? 'ai' : 'handcrafted';
             
-            window.location.href = `/download-resume?mode=${mode}&model_type=${modelType}`;
+            window.location.href = `/generate-pdf?mode=${mode}&model_type=${modelType}`;
         }
 
         function toggleEndDate() {
@@ -274,16 +279,32 @@
         function toggleAIControls() {
             const aiControls = document.querySelector('.ai-controls');
             const mainContent = document.querySelector('.main-content');
+            const jobsSection = document.querySelector('.jobs-section');
             
+            // Toggle classes
             aiControls.classList.toggle('collapsed');
             mainContent.classList.toggle('ai-mode');
+            jobsSection.classList.toggle('ai-mode');
+            
+            // Show/hide AI controls content immediately
+            if (aiControls.classList.contains('collapsed')) {
+                // Hide AI controls
+                jobsSection.classList.add('base-mode');
+                jobsSection.classList.remove('ai-mode');
+            } else {
+                // Show AI controls
+                jobsSection.classList.remove('base-mode');
+                jobsSection.classList.add('ai-mode');
+            }
         }
     </script>
 </head>
 <body>
     <div class="container">
         <h1>Resumix</h1>
-        <a href="#" onclick="downloadResume()" class="download-button">Download Resume</a>
+        <button onclick="downloadResume()" class="download-button">
+            <i class="fas fa-download"></i> Download Resume
+        </button>
         
         <div class="jobs-section">
             
@@ -373,7 +394,7 @@
                 <textarea id="myStory" placeholder="What story do you want your resume to tell?" rows="4"></textarea>
             </div>
             
-            <button onclick="optimizeResume()" class="optimize-button">
+            <button id="optimizeButton" onclick="optimizeResume()" class="optimize-button">
                 Optimize Resume
             </button>
         </div>

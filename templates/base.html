@@ -59,6 +59,7 @@
         const modeButton = document.querySelector('.mode-button');
         const aiControls = document.querySelector('.ai-controls');
         const jobsSection = document.querySelector('.jobs-section');
+        const mainContent = document.querySelector('.main-content');
         
         modeButton.classList.toggle('base');
         
@@ -67,11 +68,13 @@
             aiControls.style.transform = 'translateX(100%)';
             jobsSection.classList.remove('ai-mode');
             jobsSection.classList.add('base-mode');
+            mainContent.classList.remove('ai-mode');
         } else {
             // AI mode - show AI controls, shift content left
             aiControls.style.transform = 'translateX(0)';
             jobsSection.classList.add('ai-mode');
             jobsSection.classList.remove('base-mode');
+            mainContent.classList.add('ai-mode');
         }
     }
     </script>

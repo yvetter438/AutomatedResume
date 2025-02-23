@@ -205,6 +205,10 @@ def update_job_order(job_orders):
     conn = sqlite3.connect('resume.db')
     c = conn.cursor()
     
+    # If job_orders is a dictionary, convert it to the expected format
+    if isinstance(job_orders, dict):
+        job_orders = [{'id': job_id, 'order': order} for job_id, order in job_orders.items()]
+    
     for job in job_orders:
         c.execute('''
             UPDATE jobs 
@@ -305,6 +309,13 @@ def get_ai_ordered_jobs(model_type):
     
     conn.close()
     return jobs
+
+def update_point_order_db(point_id, new_order):
+    conn = sqlite3.connect('resume.db')
+    c = conn.cursor()
+    c.execute('UPDATE job_points SET order_num = ? WHERE id = ?', (new_order, point_id))
+    conn.commit()
+    conn.close()
 
 # Add this function to help with initialization
 def initialize_database():
