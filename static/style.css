@@ -435,21 +435,30 @@ input:checked + .slider:before {
 
 .applications-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+    grid-auto-flow: column;
+    grid-template-rows: repeat(auto-fill, minmax(320px, 1fr));
     gap: 20px;
     padding: 20px;
+    overflow-x: auto;
     justify-items: start;  /* Align items to start */
     align-items: start;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .application-card {
     position: relative;
     background: white;
-    padding: 54px;
+    padding: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     cursor: pointer;
     transition: transform 0.2s;
+    width: 300px;
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .application-card:hover {
