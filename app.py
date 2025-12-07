@@ -6,7 +6,14 @@ from database import (
     get_all_jobs, add_job, add_job_points, get_next_order_num,
     delete_job_point, delete_job_and_points, update_job_order,
     update_job_point_order, get_ai_ordered_jobs, store_ai_ordering,
-    update_point_order_db
+    update_point_order_db, get_settings, save_settings,
+    get_all_applications, get_application, create_application as db_create_application,
+    update_application, delete_application as db_delete_application,
+    get_jobs_for_application,
+    # Journal functions
+    create_journal_entry, get_journal_entries, get_journal_entry,
+    update_journal_entry, delete_journal_entry, get_journal_stats,
+    get_entries_by_date_range, get_all_tags
 )
 from ai_service import test_ai_connection, AIModel, AIService
 import sqlite3
@@ -215,73 +222,103 @@ def get_resume_view():
 
 @app.route('/resumes')
 def resumes():
-    conn = sqlite3.connect('resume.db')
-    c = conn.cursor()
-    
-    c.execute('''
-        SELECT id, company, title, application_date, status
-        FROM job_applications
-        ORDER BY application_date DESC
-    ''')
-    
-    applications = [{
-        'id': row[0],
-        'company': row[1],
-        'title': row[2],
-        'date': row[3],
-        'status': row[4]
-    } for row in c.fetchall()]
-    
-    conn.close()
-    return render_template('resumes.html', applications=applications)
+    applications = get_all_applications()
+    jobs = get_all_jobs()  # For the job selection in new application form
+    return render_template('resumes.html', applications=applications, jobs=jobs)
 
 @app.route('/application/<int:app_id>')
 def view_application(app_id):
-    conn = sqlite3.connect('resume.db')
-    c = conn.cursor()
-    
-    c.execute('''
-        SELECT id, company, title, application_date, status, job_description, story, model_type
-        FROM job_applications
-        WHERE id = ?
-    ''', (app_id,))
-    
-    row = c.fetchone()
-    application = {
-        'id': row[0],
-        'company': row[1],
-        'title': row[2],
-        'date': row[3],
-        'status': row[4],
-        'job_description': row[5],
-        'story': row[6],
-        'model_type': row[7]
-    }
-    
-    conn.close()
+    application = get_application(app_id)
+    if not application:
+        return jsonify({'error': 'Application not found'}), 404
     return jsonify(application)
 
 @app.route('/update-status/<int:app_id>', methods=['POST'])
 def update_status(app_id):
     status = request.json.get('status')
-    conn = sqlite3.connect('resume.db')
-    c = conn.cursor()
-    
-    c.execute('''
-        UPDATE job_applications
-        SET status = ?
-        WHERE id = ?
-    ''', (status, app_id))
-    
-    conn.commit()
-    conn.close()
+    update_application(app_id, status=status)
     return jsonify({'success': True})
+
+@app.route('/api/jobs')
+def api_jobs():
+    """API endpoint to get all jobs with their points"""
+    jobs = get_all_jobs()
+    return jsonify(jobs)
+
+@app.route('/generate-application-resume/<int:app_id>')
+def generate_application_resume(app_id):
+    """Generate a resume PDF for a specific application using its linked jobs"""
+    try:
+        jobs = get_jobs_for_application(app_id)
+        settings = get_settings()
+        
+        if not jobs:
+            return "No jobs linked to this application", 400
+        
+        # Convert to template format
+        experience_data = {
+            f'job{i+1}': {
+                'dates': job['dates'],
+                'title': job['title'],
+                'company': job['company'],
+                'location': job['location'],
+                'points': job['points'][:settings['points_per_job']]
+            } for i, job in enumerate(jobs[:settings['jobs_on_resume']])
+        }
+        
+        # Define paths
+        temp_tex_path = os.path.join('static', 'temp_resume.tex')
+        output_dir = 'static'
+        
+        # Ensure output directory exists
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Load and render the LaTeX template
+        env = Environment(
+            loader=FileSystemLoader('templates'),
+            block_start_string=r'\BLOCK{',
+            block_end_string='}',
+            variable_start_string=r'\VAR{',
+            variable_end_string='}',
+            comment_start_string=r'\#{',
+            comment_end_string='}',
+            line_statement_prefix='%%',
+            line_comment_prefix='%#',
+            trim_blocks=True,
+            autoescape=False,
+        )
+        template = env.get_template('resume_template.tex')
+        rendered_tex = template.render(**experience_data)
+        
+        # Write the rendered template
+        with open(temp_tex_path, 'w') as f:
+            f.write(rendered_tex)
+        
+        # Run pdflatex
+        result = subprocess.run([
+            '/Library/TeX/texbin/pdflatex',
+            '-output-directory', output_dir,
+            temp_tex_path
+        ], capture_output=True, text=True)
+        
+        if result.returncode != 0:
+            print("LaTeX Error:", result.stderr)
+            return "PDF generation failed", 500
+            
+        pdf_path = os.path.join(output_dir, 'temp_resume.pdf')
+        if not os.path.exists(pdf_path):
+            return "PDF not generated", 500
+            
+        return send_file(pdf_path, as_attachment=True, download_name='resume.pdf')
+    except Exception as e:
+        print(f"Error generating resume: {str(e)}")
+        return str(e), 500
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route('/create-application', methods=['POST'])
-def create_application():
+def create_application_route():
     try:
         # Ensure upload directory exists
         os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -290,7 +327,7 @@ def create_application():
         resume_path = None
         if 'resume' in request.files:
             file = request.files['resume']
-            if file and allowed_file(file.filename):
+            if file and file.filename and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
                 filename = f"{timestamp}_{filename}"
@@ -298,31 +335,42 @@ def create_application():
                 file.save(filepath)
                 resume_path = filepath
 
-        # Get other form data
+        # Get form data
         data = request.form
         
-        conn = sqlite3.connect('resume.db')
-        c = conn.cursor()
+        # Parse job IDs (comma-separated or JSON array)
+        job_ids = []
+        job_ids_str = data.get('job_ids', '')
+        if job_ids_str:
+            job_ids = [int(jid.strip()) for jid in job_ids_str.split(',') if jid.strip()]
         
-        c.execute('''
-            INSERT INTO job_applications 
-            (company, title, application_date, job_description, story, resume_path)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (
-            data['company'],
-            data['title'],
-            data['application_date'],
-            data.get('job_description', ''),
-            data.get('story', ''),
-            resume_path
-        ))
+        # Parse point selections (JSON format: {point_id: order})
+        point_selections = {}
+        points_str = data.get('point_selections', '')
+        if points_str:
+            import json
+            try:
+                point_selections = json.loads(points_str)
+            except:
+                pass
         
-        conn.commit()
-        conn.close()
+        # Create application using database function
+        app_id = db_create_application(
+            company=data['company'],
+            title=data['title'],
+            application_date=data['application_date'],
+            job_description=data.get('job_description', ''),
+            story=data.get('story', ''),
+            job_ids=job_ids,
+            point_selections=point_selections,
+            resume_path=resume_path
+        )
         
-        return jsonify({'success': True})
+        return jsonify({'success': True, 'id': app_id})
     except Exception as e:
         print(f"Error creating application: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/download-application-resume/<int:app_id>')
@@ -340,23 +388,14 @@ def download_application_resume(app_id):
     return send_file(result[0], as_attachment=True)
 
 @app.route('/delete-application/<int:app_id>', methods=['POST'])
-def delete_application(app_id):
+def delete_application_route(app_id):
     try:
-        conn = sqlite3.connect('resume.db')
-        c = conn.cursor()
-        
-        # Get resume path before deleting
-        c.execute('SELECT resume_path FROM job_applications WHERE id = ?', (app_id,))
-        result = c.fetchone()
-        
-        # Delete application
-        c.execute('DELETE FROM job_applications WHERE id = ?', (app_id,))
-        conn.commit()
-        conn.close()
+        # Delete from database and get resume path
+        resume_path = db_delete_application(app_id)
         
         # Delete resume file if it exists
-        if result and result[0] and os.path.exists(result[0]):
-            os.remove(result[0])
+        if resume_path and os.path.exists(resume_path):
+            os.remove(resume_path)
         
         return jsonify({'success': True})
     except Exception as e:
@@ -369,6 +408,168 @@ def generate_pdf_route():
     model_type = request.args.get('model_type', 'openai')
     pdf_path = generate_pdf(mode, model_type)
     return send_file(pdf_path, as_attachment=True, download_name='resume.pdf')
+
+# ============================================
+# Settings Routes
+# ============================================
+
+@app.route('/settings')
+def settings():
+    user_settings = get_settings()
+    return render_template('settings.html', settings=user_settings)
+
+@app.route('/settings/save', methods=['POST'])
+def save_settings_route():
+    try:
+        settings_data = {
+            'full_name': request.form.get('full_name', ''),
+            'email': request.form.get('email', ''),
+            'phone': request.form.get('phone', ''),
+            'location': request.form.get('location', ''),
+            'linkedin_url': request.form.get('linkedin_url', ''),
+            'github_url': request.form.get('github_url', ''),
+            'website_url': request.form.get('website_url', ''),
+            'my_story': request.form.get('my_story', ''),
+            'jobs_on_resume': int(request.form.get('jobs_on_resume', 4)),
+            'points_per_job': int(request.form.get('points_per_job', 3))
+        }
+        save_settings(settings_data)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+# ============================================
+# Journal Routes
+# ============================================
+
+@app.route('/journal')
+def journal():
+    """Main journal page"""
+    jobs = get_all_jobs()
+    entries = get_journal_entries(limit=20)
+    stats = get_journal_stats()
+    tags = get_all_tags()
+    
+    # Get selected job filter if any
+    job_id = request.args.get('job_id', type=int)
+    if job_id:
+        entries = get_journal_entries(job_id=job_id, limit=20)
+        stats = get_journal_stats(job_id=job_id)
+    
+    return render_template('journal.html', 
+                         jobs=jobs, 
+                         entries=entries, 
+                         stats=stats,
+                         tags=tags,
+                         selected_job_id=job_id)
+
+@app.route('/journal/entry', methods=['POST'])
+def create_entry():
+    """Create a new journal entry"""
+    try:
+        data = request.form
+        
+        # Parse tags from comma-separated string
+        tags = []
+        tags_str = data.get('tags', '')
+        if tags_str:
+            tags = [t.strip() for t in tags_str.split(',') if t.strip()]
+        
+        entry_id = create_journal_entry(
+            job_id=int(data['job_id']),
+            entry_date=data['entry_date'],
+            content=data['content'],
+            title=data.get('title'),
+            hours_worked=float(data['hours_worked']) if data.get('hours_worked') else None,
+            category=data.get('category', 'task'),
+            mood=data.get('mood', 'neutral'),
+            is_highlight=data.get('is_highlight') == 'true',
+            tags=tags
+        )
+        
+        return jsonify({'success': True, 'id': entry_id})
+    except Exception as e:
+        print(f"Error creating journal entry: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/journal/entry/<int:entry_id>')
+def get_entry(entry_id):
+    """Get a single journal entry"""
+    entry = get_journal_entry(entry_id)
+    if not entry:
+        return jsonify({'error': 'Entry not found'}), 404
+    return jsonify(entry)
+
+@app.route('/journal/entry/<int:entry_id>', methods=['PUT'])
+def update_entry(entry_id):
+    """Update a journal entry"""
+    try:
+        data = request.get_json()
+        
+        # Parse tags if provided
+        if 'tags' in data and isinstance(data['tags'], str):
+            data['tags'] = [t.strip() for t in data['tags'].split(',') if t.strip()]
+        
+        update_journal_entry(entry_id, **data)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/journal/entry/<int:entry_id>', methods=['DELETE'])
+def delete_entry(entry_id):
+    """Delete a journal entry"""
+    try:
+        delete_journal_entry(entry_id)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/journal/entries')
+def get_entries():
+    """Get journal entries with filters (API endpoint)"""
+    job_id = request.args.get('job_id', type=int)
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    limit = request.args.get('limit', 50, type=int)
+    offset = request.args.get('offset', 0, type=int)
+    
+    entries = get_journal_entries(
+        job_id=job_id,
+        start_date=start_date,
+        end_date=end_date,
+        limit=limit,
+        offset=offset
+    )
+    
+    return jsonify(entries)
+
+@app.route('/journal/stats')
+def journal_stats():
+    """Get journal statistics"""
+    job_id = request.args.get('job_id', type=int)
+    stats = get_journal_stats(job_id=job_id)
+    return jsonify(stats)
+
+@app.route('/journal/calendar')
+def journal_calendar():
+    """Get entries for calendar view"""
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    job_id = request.args.get('job_id', type=int)
+    
+    if not start_date or not end_date:
+        # Default to current month
+        today = datetime.now()
+        start_date = today.replace(day=1).strftime('%Y-%m-%d')
+        if today.month == 12:
+            end_date = today.replace(year=today.year+1, month=1, day=1).strftime('%Y-%m-%d')
+        else:
+            end_date = today.replace(month=today.month+1, day=1).strftime('%Y-%m-%d')
+    
+    entries = get_entries_by_date_range(start_date, end_date, job_id)
+    return jsonify(entries)
 
 if __name__ == '__main__':
     app.run(debug=True)

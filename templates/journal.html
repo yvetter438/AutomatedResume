@@ -1,0 +1,875 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container journal-container">
+    <div class="journal-header">
+        <div class="header-top">
+            <h1>Work Journal</h1>
+            <button class="new-entry-btn" onclick="showNewEntryModal()">
+                <i class="fas fa-plus"></i>
+                New Entry
+            </button>
+        </div>
+        <p class="page-subtitle">Log your daily accomplishments and build evidence for your resume</p>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="journal-stats">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-fire"></i></div>
+            <div class="stat-info">
+                <span class="stat-value">{{ stats.streak }}</span>
+                <span class="stat-label">Day Streak</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-book"></i></div>
+            <div class="stat-info">
+                <span class="stat-value">{{ stats.total_entries }}</span>
+                <span class="stat-label">Total Entries</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-clock"></i></div>
+            <div class="stat-info">
+                <span class="stat-value">{{ stats.total_hours }}</span>
+                <span class="stat-label">Hours Logged</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-star"></i></div>
+            <div class="stat-info">
+                <span class="stat-value">{{ stats.highlights }}</span>
+                <span class="stat-label">Highlights</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="journal-filters">
+        <div class="filter-group">
+            <label>Filter by Job</label>
+            <select id="jobFilter" onchange="filterByJob(this.value)">
+                <option value="">All Jobs</option>
+                {% for job in jobs %}
+                <option value="{{ job.id }}" {% if selected_job_id == job.id %}selected{% endif %}>
+                    {{ job.title }} at {{ job.company }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-actions">
+            <button class="filter-btn" onclick="showCalendarView()">
+                <i class="fas fa-calendar-alt"></i>
+                Calendar
+            </button>
+        </div>
+    </div>
+
+    <!-- Entries List -->
+    <div class="entries-list">
+        {% if entries %}
+            {% set current_date = '' %}
+            {% for entry in entries %}
+                {% if entry.entry_date != current_date %}
+                    {% set current_date = entry.entry_date %}
+                    <div class="date-divider">
+                        <span class="date-label">{{ entry.entry_date }}</span>
+                    </div>
+                {% endif %}
+                
+                <article class="entry-card {% if entry.is_highlight %}highlight{% endif %}" 
+                         data-entry-id="{{ entry.id }}"
+                         onclick="viewEntry({{ entry.id }})">
+                    <div class="entry-header">
+                        <div class="entry-meta">
+                            <span class="entry-job">
+                                <i class="fas fa-briefcase"></i>
+                                {{ entry.job_title }} at {{ entry.company }}
+                            </span>
+                            <span class="entry-category {{ entry.category }}">
+                                {{ entry.category }}
+                            </span>
+                        </div>
+                        {% if entry.is_highlight %}
+                        <span class="highlight-badge">
+                            <i class="fas fa-star"></i>
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    {% if entry.title %}
+                    <h3 class="entry-title">{{ entry.title }}</h3>
+                    {% endif %}
+                    
+                    <p class="entry-content">{{ entry.content[:200] }}{% if entry.content|length > 200 %}...{% endif %}</p>
+                    
+                    <div class="entry-footer">
+                        <div class="entry-tags">
+                            {% for tag in entry.tags %}
+                            <span class="tag">{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+                        {% if entry.hours_worked %}
+                        <span class="entry-hours">
+                            <i class="fas fa-clock"></i>
+                            {{ entry.hours_worked }}h
+                        </span>
+                        {% endif %}
+                    </div>
+                </article>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-journal-whills"></i>
+                <h3>No journal entries yet</h3>
+                <p>Start logging your daily work to build evidence for your resume</p>
+                <button class="cta-button" onclick="showNewEntryModal()">
+                    <i class="fas fa-plus"></i>
+                    Create Your First Entry
+                </button>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- New Entry Modal -->
+<div id="newEntryModal" class="modal">
+    <div class="modal-content entry-modal">
+        <span class="close" onclick="closeNewEntryModal()">&times;</span>
+        <h2 class="modal-title">
+            <i class="fas fa-edit"></i>
+            New Journal Entry
+        </h2>
+        
+        <form id="newEntryForm" onsubmit="createEntry(event)">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="entryJob">Job</label>
+                    <select id="entryJob" name="job_id" required>
+                        <option value="">Select a job...</option>
+                        {% for job in jobs %}
+                        <option value="{{ job.id }}">{{ job.title }} at {{ job.company }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="entryDate">Date</label>
+                    <input type="date" id="entryDate" name="entry_date" required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="entryTitle">Title <span class="optional">(optional)</span></label>
+                <input type="text" id="entryTitle" name="title" placeholder="e.g. Shipped new feature, Led team meeting">
+            </div>
+            
+            <div class="form-group">
+                <label for="entryContent">What did you accomplish today?</label>
+                <textarea id="entryContent" name="content" rows="5" required
+                          placeholder="Describe what you worked on, problems you solved, or progress you made..."></textarea>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="entryHours">Hours Worked</label>
+                    <input type="number" id="entryHours" name="hours_worked" 
+                           min="0" max="24" step="0.5" placeholder="e.g. 8">
+                </div>
+                
+                <div class="form-group">
+                    <label for="entryCategory">Category</label>
+                    <select id="entryCategory" name="category">
+                        <option value="task">Task</option>
+                        <option value="accomplishment">Accomplishment</option>
+                        <option value="meeting">Meeting</option>
+                        <option value="learning">Learning</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="entryMood">How did today feel?</label>
+                <div class="mood-selector">
+                    <label class="mood-option">
+                        <input type="radio" name="mood" value="great">
+                        <span class="mood-emoji">🔥</span>
+                        <span class="mood-label">Great</span>
+                    </label>
+                    <label class="mood-option">
+                        <input type="radio" name="mood" value="good">
+                        <span class="mood-emoji">😊</span>
+                        <span class="mood-label">Good</span>
+                    </label>
+                    <label class="mood-option">
+                        <input type="radio" name="mood" value="neutral" checked>
+                        <span class="mood-emoji">😐</span>
+                        <span class="mood-label">Neutral</span>
+                    </label>
+                    <label class="mood-option">
+                        <input type="radio" name="mood" value="challenging">
+                        <span class="mood-emoji">😤</span>
+                        <span class="mood-label">Tough</span>
+                    </label>
+                    <label class="mood-option">
+                        <input type="radio" name="mood" value="difficult">
+                        <span class="mood-emoji">😓</span>
+                        <span class="mood-label">Hard</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="entryTags">Tags <span class="optional">(comma-separated)</span></label>
+                <input type="text" id="entryTags" name="tags" 
+                       placeholder="e.g. python, leadership, bug-fix">
+            </div>
+            
+            <div class="form-group highlight-toggle">
+                <label class="toggle-label">
+                    <input type="checkbox" id="entryHighlight" name="is_highlight">
+                    <span class="toggle-switch"></span>
+                    <span class="toggle-text">
+                        <i class="fas fa-star"></i>
+                        Mark as Highlight
+                    </span>
+                </label>
+                <span class="toggle-hint">Highlights are key accomplishments you want to remember</span>
+            </div>
+            
+            <button type="submit" class="submit-button">
+                <i class="fas fa-save"></i>
+                Save Entry
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- View Entry Modal -->
+<div id="viewEntryModal" class="modal">
+    <div class="modal-content entry-modal">
+        <span class="close" onclick="closeViewEntryModal()">&times;</span>
+        <div id="entryViewContent">
+            <!-- Populated by JavaScript -->
+        </div>
+        <div class="modal-actions">
+            <button onclick="editCurrentEntry()" class="action-button secondary">
+                <i class="fas fa-edit"></i>
+                Edit
+            </button>
+            <button onclick="deleteCurrentEntry()" class="action-button danger">
+                <i class="fas fa-trash"></i>
+                Delete
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Journal Page Styles */
+.journal-container {
+    max-width: 900px;
+}
+
+.journal-header {
+    margin-bottom: 32px;
+}
+
+.header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 8px;
+}
+
+.header-top h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    white-space: nowrap;
+}
+
+.page-subtitle {
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+.new-entry-btn {
+    padding: 14px 28px;
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    border: none;
+    border-radius: var(--radius-md);
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.new-entry-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Stats */
+.journal-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: var(--accent-primary);
+}
+
+.stat-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* Filters */
+.journal-filters {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding: 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.filter-group label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.filter-group select {
+    padding: 10px 16px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    min-width: 200px;
+}
+
+.filter-btn {
+    padding: 10px 16px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all var(--transition-fast);
+}
+
+.filter-btn:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+/* Date Divider */
+.date-divider {
+    display: flex;
+    align-items: center;
+    margin: 24px 0 16px 0;
+}
+
+.date-label {
+    background: var(--bg-tertiary);
+    padding: 6px 16px;
+    border-radius: var(--radius-full);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* Entry Cards */
+.entry-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.entry-card:hover {
+    border-color: var(--accent-primary);
+    transform: translateX(4px);
+}
+
+.entry-card.highlight {
+    border-left: 3px solid #f0b429;
+    background: linear-gradient(90deg, rgba(240, 180, 41, 0.05) 0%, transparent 100%);
+}
+
+.entry-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.entry-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.entry-job {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.entry-category {
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.entry-category.task { background: rgba(88, 166, 255, 0.15); color: #58a6ff; }
+.entry-category.accomplishment { background: rgba(63, 185, 80, 0.15); color: #3fb950; }
+.entry-category.meeting { background: rgba(163, 113, 247, 0.15); color: #a371f7; }
+.entry-category.learning { background: rgba(210, 168, 98, 0.15); color: #d2a862; }
+.entry-category.other { background: rgba(139, 148, 158, 0.15); color: #8b949e; }
+
+.highlight-badge {
+    color: #f0b429;
+    font-size: 1rem;
+}
+
+.entry-title {
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.entry-content {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 12px;
+}
+
+.entry-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.entry-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.tag {
+    padding: 4px 10px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.entry-hours {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Entry Modal */
+.entry-modal {
+    max-width: 600px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+/* Mood Selector */
+.mood-selector {
+    display: flex;
+    gap: 8px;
+}
+
+.mood-option {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px;
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border-default);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.mood-option:hover {
+    border-color: var(--accent-primary);
+}
+
+.mood-option input {
+    display: none;
+}
+
+.mood-option input:checked + .mood-emoji + .mood-label,
+.mood-option input:checked ~ .mood-label {
+    color: var(--accent-primary);
+}
+
+.mood-option:has(input:checked) {
+    border-color: var(--accent-primary);
+    background: rgba(88, 166, 255, 0.1);
+}
+
+.mood-emoji {
+    font-size: 1.5rem;
+    margin-bottom: 4px;
+}
+
+.mood-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Highlight Toggle */
+.highlight-toggle {
+    background: var(--bg-tertiary);
+    padding: 16px;
+    border-radius: var(--radius-md);
+}
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+}
+
+.toggle-switch {
+    width: 44px;
+    height: 24px;
+    background: var(--border-default);
+    border-radius: 12px;
+    position: relative;
+    transition: background var(--transition-fast);
+}
+
+.toggle-switch::after {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    background: white;
+    border-radius: 50%;
+    top: 3px;
+    left: 3px;
+    transition: transform var(--transition-fast);
+}
+
+.toggle-label input:checked + .toggle-switch {
+    background: #f0b429;
+}
+
+.toggle-label input:checked + .toggle-switch::after {
+    transform: translateX(20px);
+}
+
+.toggle-label input {
+    display: none;
+}
+
+.toggle-text {
+    font-weight: 500;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.toggle-text i {
+    color: #f0b429;
+}
+
+.toggle-hint {
+    display: block;
+    margin-top: 8px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.optional {
+    font-weight: 400;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+/* CTA Button */
+.cta-button {
+    padding: 14px 28px;
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    border: none;
+    border-radius: var(--radius-md);
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .journal-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .page-header {
+        flex-direction: column;
+    }
+    
+    .new-entry-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .mood-selector {
+        flex-wrap: wrap;
+    }
+    
+    .mood-option {
+        min-width: calc(33% - 8px);
+    }
+}
+</style>
+
+<script>
+let currentEntryId = null;
+
+// Set default date to today
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('entryDate').valueAsDate = new Date();
+});
+
+function showNewEntryModal() {
+    document.getElementById('newEntryModal').style.display = 'block';
+    document.getElementById('entryDate').valueAsDate = new Date();
+}
+
+function closeNewEntryModal() {
+    document.getElementById('newEntryModal').style.display = 'none';
+    document.getElementById('newEntryForm').reset();
+}
+
+function createEntry(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    // Handle highlight checkbox
+    formData.set('is_highlight', document.getElementById('entryHighlight').checked ? 'true' : 'false');
+    
+    fetch('/journal/entry', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Failed to create entry: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to create entry');
+    });
+}
+
+function viewEntry(entryId) {
+    currentEntryId = entryId;
+    
+    fetch(`/journal/entry/${entryId}`)
+        .then(response => response.json())
+        .then(entry => {
+            const moodEmojis = {
+                'great': '🔥',
+                'good': '😊',
+                'neutral': '😐',
+                'challenging': '😤',
+                'difficult': '😓'
+            };
+            
+            const content = `
+                <div class="entry-view-header">
+                    <span class="entry-job">
+                        <i class="fas fa-briefcase"></i>
+                        ${entry.job_title} at ${entry.company}
+                    </span>
+                    <span class="entry-date">${entry.entry_date}</span>
+                </div>
+                
+                ${entry.title ? `<h2 class="entry-view-title">${entry.title}</h2>` : ''}
+                
+                <div class="entry-view-meta">
+                    <span class="entry-category ${entry.category}">${entry.category}</span>
+                    ${entry.hours_worked ? `<span class="entry-hours"><i class="fas fa-clock"></i> ${entry.hours_worked}h</span>` : ''}
+                    <span class="entry-mood">${moodEmojis[entry.mood] || ''} ${entry.mood}</span>
+                    ${entry.is_highlight ? '<span class="highlight-badge"><i class="fas fa-star"></i> Highlight</span>' : ''}
+                </div>
+                
+                <div class="entry-view-content">
+                    ${entry.content.replace(/\n/g, '<br>')}
+                </div>
+                
+                ${entry.tags.length > 0 ? `
+                    <div class="entry-view-tags">
+                        ${entry.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                    </div>
+                ` : ''}
+            `;
+            
+            document.getElementById('entryViewContent').innerHTML = content;
+            document.getElementById('viewEntryModal').style.display = 'block';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to load entry');
+        });
+}
+
+function closeViewEntryModal() {
+    document.getElementById('viewEntryModal').style.display = 'none';
+    currentEntryId = null;
+}
+
+function editCurrentEntry() {
+    // TODO: Implement edit functionality
+    alert('Edit functionality coming soon!');
+}
+
+function deleteCurrentEntry() {
+    if (!currentEntryId) return;
+    
+    if (confirm('Are you sure you want to delete this entry?')) {
+        fetch(`/journal/entry/${currentEntryId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to delete entry');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to delete entry');
+        });
+    }
+}
+
+function filterByJob(jobId) {
+    if (jobId) {
+        window.location.href = `/journal?job_id=${jobId}`;
+    } else {
+        window.location.href = '/journal';
+    }
+}
+
+function showCalendarView() {
+    // TODO: Implement calendar view
+    alert('Calendar view coming soon!');
+}
+
+// Close modals on outside click
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+        currentEntryId = null;
+    }
+}
+
+// No modal needed for journal page
+function showNewJobModal() {
+    window.location.href = '/';
+}
+
+function showNewApplicationModal() {
+    window.location.href = '/resumes';
+}
+</script>
+{% endblock %}
+

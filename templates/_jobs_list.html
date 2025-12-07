@@ -1,41 +1,67 @@
 {% for job in jobs %}
-<div class="job-card {% if loop.index <= 4 %}in-resume{% endif %}"
-     draggable="true"
-     ondragstart="dragStart(event)"
-     ondragend="dragEnd(event)"
-     data-job-id="{{ job.id }}"
-     id="job-{{ job.id }}">
+<article class="job-card"
+         draggable="true"
+         ondragstart="dragStart(event)"
+         ondragend="dragEnd(event)"
+         data-job-id="{{ job.id }}"
+         id="job-{{ job.id }}">
+    
     <div class="job-header">
-        <h3>{{ job.title }} at {{ job.company }}</h3>
+        <div class="job-title-section">
+            <h3>{{ job.title }}</h3>
+            <span class="company-name">{{ job.company }}</span>
+        </div>
         <div class="job-actions">
-            {% if loop.index <= 4 %}
-            <span class="resume-badge">In Resume</span>
-            {% endif %}
-            <form action="{{ url_for('delete_job', job_id=job.id) }}" method="POST" class="delete-job">
-                <button type="submit" class="delete-button">Delete Job</button>
+            <button type="button" class="edit-button" onclick="editJob({{ job.id }})">
+                <i class="fas fa-pen"></i>
+            </button>
+            <form action="{{ url_for('delete_job', job_id=job.id) }}" method="POST" class="delete-job" onsubmit="return confirm('Delete this job?')">
+                <button type="submit" class="delete-button">
+                    <i class="fas fa-trash"></i>
+                </button>
             </form>
         </div>
     </div>
-    <p>{{ job.location }} | {{ job.dates }}</p>
-    <ul id="points-{{ job.id }}" class="points-list" ondragover="dragOverPoint(event, {{ job.id }})" ondrop="updatePointOrder({{ job.id }})">
+    
+    <div class="job-meta">
+        <span class="meta-item">
+            <i class="fas fa-map-marker-alt"></i>
+            {{ job.location }}
+        </span>
+        <span class="meta-item">
+            <i class="fas fa-calendar-alt"></i>
+            {{ job.dates }}
+        </span>
+    </div>
+    
+    <ul id="points-{{ job.id }}" 
+        class="points-list" 
+        ondragover="dragOverPoint(event, {{ job.id }})" 
+        ondrop="updatePointOrder({{ job.id }})">
         {% for point in job.points %}
-        <li class="point-item {% if loop.index <= 3 and job.display_order <= 4 %}in-resume{% endif %}"
+        <li class="point-item"
             draggable="true"
             ondragstart="dragStartPoint(event)"
             ondragend="dragEndPoint(event)"
             data-point-id="{{ job.point_ids[loop.index0] }}"
             id="point-{{ job.point_ids[loop.index0] }}">
-            {{ point }}
-            <div class="point-actions">
-                {% if loop.index <= 3 and job.display_order <= 4 %}
-                <span class="point-badge">In Resume</span>
-                {% endif %}
-                <form action="{{ url_for('delete_point', point_id=job.point_ids[loop.index0]) }}" method="POST" class="delete-point">
-                    <button type="submit" class="delete-button small">×</button>
-                </form>
-            </div>
+            <i class="fas fa-grip-vertical drag-handle"></i>
+            <span class="point-text">{{ point }}</span>
+            <form action="{{ url_for('delete_point', point_id=job.point_ids[loop.index0]) }}" method="POST" class="delete-point">
+                <button type="submit" class="delete-button small">
+                    <i class="fas fa-times"></i>
+                </button>
+            </form>
         </li>
         {% endfor %}
     </ul>
-</div>
-{% endfor %} 
+    
+    <!-- Add Point Form -->
+    <form action="{{ url_for('add_point', job_id=job.id) }}" method="POST" class="add-point-form">
+        <input type="text" name="point" placeholder="Add a bullet point..." required>
+        <button type="submit">
+            <i class="fas fa-plus"></i>
+        </button>
+    </form>
+</article>
+{% endfor %}

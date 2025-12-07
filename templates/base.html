@@ -1,82 +1,85 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Resume Generator</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Resumix - Your personal career management hub">
+    <meta name="theme-color" content="#0d1117">
+    <title>Resumix</title>
+    
+    <!-- Styles -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='resumix-logo.svg') }}">
-    <!-- Fallback for browsers that don't support SVG favicons -->
-    <link rel="alternate icon" href="{{ url_for('static', filename='resumix-logo.svg') }}">
 </head>
 <body>
     <div class="app-container">
-        <div class="sidebar">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar" aria-label="Main navigation">
             <div class="sidebar-middle">
-                <button onclick="switchPage()" class="nav-button">
-                    <i class="fas {{ 'fa-briefcase' if request.path == '/resumes' else 'fa-file-alt' }}"></i>
-                </button>
-                <button onclick="showNewItemModal()" class="add-button">
+                <!-- Experience -->
+                <a href="/" class="nav-button {% if request.path == '/' %}active{% endif %}" aria-label="Experience" title="Experience">
+                    <i class="fas fa-briefcase"></i>
+                </a>
+                
+                <!-- Journal -->
+                <a href="/journal" class="nav-button {% if request.path == '/journal' %}active{% endif %}" aria-label="Journal" title="Work Journal">
+                    <i class="fas fa-book"></i>
+                </a>
+                
+                <!-- Applications -->
+                <a href="/resumes" class="nav-button {% if request.path == '/resumes' %}active{% endif %}" aria-label="Applications" title="Applications">
+                    <i class="fas fa-paper-plane"></i>
+                </a>
+                
+                <!-- Add New Item -->
+                <button onclick="showNewItemModal()" class="add-button" aria-label="Add new item" title="Add New">
                     <i class="fas fa-plus"></i>
                 </button>
-                {% if request.path == '/' %}
-                <button onclick="toggleAIMode()" class="mode-button">
-                    <img src="{{ url_for('static', filename='resumix-logo.svg') }}" alt="AI" class="ai-icon">
-                    <i class="fas fa-layer-group base-icon"></i>
-                </button>
-                {% endif %}
             </div>
+            
             <div class="sidebar-bottom">
-                <button class="settings-button">
+                <a href="/settings" class="settings-button {% if request.path == '/settings' %}active{% endif %}" aria-label="Settings" title="Settings">
                     <i class="fas fa-cog"></i>
-                </button>
+                </a>
             </div>
-        </div>
-        <div class="main-content">
+        </nav>
+        
+        <!-- Main Content -->
+        <main class="main-content">
             {% block content %}{% endblock %}
-        </div>
+        </main>
     </div>
 
     <script>
-    function switchPage() {
-        const path = window.location.pathname;
-        if (path === '/') {
-            window.location.href = '/resumes';
-        } else if (path === '/resumes') {
-            window.location.href = '/';
-        }
-    }
-
+    // Show appropriate modal based on current page
     function showNewItemModal() {
         const path = window.location.pathname;
         if (path === '/') {
             showNewJobModal();
         } else if (path === '/resumes') {
             showNewApplicationModal();
+        } else if (path === '/journal') {
+            showNewEntryModal();
         }
     }
 
-    function toggleAIMode() {
-        const modeButton = document.querySelector('.mode-button');
-        const aiControls = document.querySelector('.ai-controls');
-        const jobsSection = document.querySelector('.jobs-section');
-        const mainContent = document.querySelector('.main-content');
-        
-        modeButton.classList.toggle('base');
-        
-        if (modeButton.classList.contains('base')) {
-            // Base mode - hide AI controls, center content
-            aiControls.style.transform = 'translateX(100%)';
-            jobsSection.classList.remove('ai-mode');
-            jobsSection.classList.add('base-mode');
-            mainContent.classList.remove('ai-mode');
-        } else {
-            // AI mode - show AI controls, shift content left
-            aiControls.style.transform = 'translateX(0)';
-            jobsSection.classList.add('ai-mode');
-            jobsSection.classList.remove('base-mode');
-            mainContent.classList.add('ai-mode');
+    // Close modals when clicking outside
+    document.addEventListener('click', function(event) {
+        if (event.target.classList.contains('modal')) {
+            event.target.style.display = 'none';
         }
-    }
+    });
+
+    // Keyboard accessibility
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => modal.style.display = 'none');
+        }
+    });
     </script>
 </body>
-</html> 
+</html>

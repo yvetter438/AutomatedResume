@@ -1,0 +1,439 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container settings-container">
+    <header class="page-header">
+        <h1>Settings</h1>
+        <p class="page-subtitle">Configure your profile and preferences</p>
+    </header>
+    
+    <form id="settingsForm" onsubmit="saveSettings(event)">
+        <!-- Personal Info Section -->
+        <section class="settings-section">
+            <h2 class="section-title">
+                <i class="fas fa-user"></i>
+                Personal Information
+            </h2>
+            <p class="section-description">This information will appear on your generated resumes</p>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="full_name">Full Name</label>
+                    <input type="text" id="full_name" name="full_name" 
+                           value="{{ settings.full_name }}" 
+                           placeholder="John Doe">
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" 
+                           value="{{ settings.email }}" 
+                           placeholder="john@example.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone">Phone</label>
+                    <input type="tel" id="phone" name="phone" 
+                           value="{{ settings.phone }}" 
+                           placeholder="(555) 123-4567">
+                </div>
+                
+                <div class="form-group">
+                    <label for="location">Location</label>
+                    <input type="text" id="location" name="location" 
+                           value="{{ settings.location }}" 
+                           placeholder="San Francisco, CA">
+                </div>
+            </div>
+        </section>
+        
+        <!-- Links Section -->
+        <section class="settings-section">
+            <h2 class="section-title">
+                <i class="fas fa-link"></i>
+                Links & Profiles
+            </h2>
+            <p class="section-description">Your professional profiles and portfolio</p>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="linkedin_url">
+                        <i class="fab fa-linkedin"></i>
+                        LinkedIn
+                    </label>
+                    <input type="url" id="linkedin_url" name="linkedin_url" 
+                           value="{{ settings.linkedin_url }}" 
+                           placeholder="https://linkedin.com/in/johndoe">
+                </div>
+                
+                <div class="form-group">
+                    <label for="github_url">
+                        <i class="fab fa-github"></i>
+                        GitHub
+                    </label>
+                    <input type="url" id="github_url" name="github_url" 
+                           value="{{ settings.github_url }}" 
+                           placeholder="https://github.com/johndoe">
+                </div>
+                
+                <div class="form-group full-width">
+                    <label for="website_url">
+                        <i class="fas fa-globe"></i>
+                        Personal Website
+                    </label>
+                    <input type="url" id="website_url" name="website_url" 
+                           value="{{ settings.website_url }}" 
+                           placeholder="https://johndoe.com">
+                </div>
+            </div>
+        </section>
+        
+        <!-- Your Story Section -->
+        <section class="settings-section">
+            <h2 class="section-title">
+                <i class="fas fa-feather-alt"></i>
+                Your Story
+            </h2>
+            <p class="section-description">
+                Describe your professional narrative, strengths, and the unique value you bring. 
+                This helps tailor your resume for different opportunities.
+            </p>
+            
+            <div class="form-group">
+                <textarea id="my_story" name="my_story" rows="6" 
+                          placeholder="I'm a software engineer with 5 years of experience in building scalable web applications. I'm passionate about clean code, user experience, and mentoring junior developers. My background in both startups and enterprise companies gives me a unique perspective on balancing speed with quality...">{{ settings.my_story }}</textarea>
+                <div class="char-count">
+                    <span id="storyCharCount">{{ settings.my_story|length }}</span> characters
+                </div>
+            </div>
+        </section>
+        
+        <!-- Resume Preferences Section -->
+        <section class="settings-section">
+            <h2 class="section-title">
+                <i class="fas fa-sliders-h"></i>
+                Resume Preferences
+            </h2>
+            <p class="section-description">Control how your resume is generated</p>
+            
+            <div class="form-grid preferences-grid">
+                <div class="form-group">
+                    <label for="jobs_on_resume">Jobs to Include</label>
+                    <div class="number-input-wrapper">
+                        <button type="button" onclick="adjustNumber('jobs_on_resume', -1)">−</button>
+                        <input type="number" id="jobs_on_resume" name="jobs_on_resume" 
+                               value="{{ settings.jobs_on_resume }}" min="1" max="10">
+                        <button type="button" onclick="adjustNumber('jobs_on_resume', 1)">+</button>
+                    </div>
+                    <span class="input-hint">Number of jobs to include on your resume</span>
+                </div>
+                
+                <div class="form-group">
+                    <label for="points_per_job">Points per Job</label>
+                    <div class="number-input-wrapper">
+                        <button type="button" onclick="adjustNumber('points_per_job', -1)">−</button>
+                        <input type="number" id="points_per_job" name="points_per_job" 
+                               value="{{ settings.points_per_job }}" min="1" max="10">
+                        <button type="button" onclick="adjustNumber('points_per_job', 1)">+</button>
+                    </div>
+                    <span class="input-hint">Bullet points to show for each job</span>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Save Button -->
+        <div class="save-section">
+            <button type="submit" class="save-button" id="saveButton">
+                <i class="fas fa-save"></i>
+                Save Settings
+            </button>
+            <span class="save-status" id="saveStatus"></span>
+        </div>
+    </form>
+</div>
+
+<style>
+/* Settings Page Styles */
+.settings-container {
+    max-width: 800px;
+}
+
+.settings-section {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    margin-bottom: 24px;
+}
+
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-title i {
+    color: var(--accent-primary);
+    font-size: 1rem;
+}
+
+.section-description {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 24px;
+    line-height: 1.5;
+}
+
+/* Form Grid */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.form-group label i {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: all var(--transition-fast);
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 120px;
+    line-height: 1.6;
+}
+
+/* Character Count */
+.char-count {
+    text-align: right;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    margin-top: 8px;
+}
+
+/* Number Input */
+.number-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.number-input-wrapper button {
+    width: 44px;
+    height: 44px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.number-input-wrapper button:hover {
+    background: var(--bg-hover);
+    color: var(--accent-primary);
+}
+
+.number-input-wrapper input {
+    width: 60px;
+    text-align: center;
+    border: none;
+    background: transparent;
+    padding: 12px 0;
+    -moz-appearance: textfield;
+}
+
+.number-input-wrapper input::-webkit-outer-spin-button,
+.number-input-wrapper input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.input-hint {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    margin-top: 8px;
+}
+
+/* Preferences Grid */
+.preferences-grid {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.preferences-grid .form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Save Section */
+.save-section {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding-top: 8px;
+}
+
+.save-button {
+    padding: 14px 32px;
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    border: none;
+    border-radius: var(--radius-md);
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all var(--transition-fast);
+}
+
+.save-button:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.save-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.save-status {
+    color: var(--accent-success);
+    font-size: 0.9rem;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+}
+
+.save-status.show {
+    opacity: 1;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .preferences-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<script>
+// Character count for story
+const storyTextarea = document.getElementById('my_story');
+const charCount = document.getElementById('storyCharCount');
+
+storyTextarea.addEventListener('input', function() {
+    charCount.textContent = this.value.length;
+});
+
+// Number input adjustment
+function adjustNumber(inputId, delta) {
+    const input = document.getElementById(inputId);
+    const currentValue = parseInt(input.value) || 0;
+    const min = parseInt(input.min) || 1;
+    const max = parseInt(input.max) || 10;
+    const newValue = Math.max(min, Math.min(max, currentValue + delta));
+    input.value = newValue;
+}
+
+// Save settings
+function saveSettings(event) {
+    event.preventDefault();
+    
+    const form = document.getElementById('settingsForm');
+    const formData = new FormData(form);
+    const saveButton = document.getElementById('saveButton');
+    const saveStatus = document.getElementById('saveStatus');
+    
+    // Disable button and show loading state
+    saveButton.disabled = true;
+    saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    
+    fetch('/settings/save', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            saveStatus.textContent = '✓ Settings saved!';
+            saveStatus.classList.add('show');
+            
+            setTimeout(() => {
+                saveStatus.classList.remove('show');
+            }, 3000);
+        } else {
+            throw new Error(data.error || 'Failed to save settings');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        saveStatus.textContent = '✗ ' + error.message;
+        saveStatus.style.color = 'var(--accent-danger)';
+        saveStatus.classList.add('show');
+    })
+    .finally(() => {
+        saveButton.disabled = false;
+        saveButton.innerHTML = '<i class="fas fa-save"></i> Save Settings';
+    });
+}
+
+// No modal needed for settings page
+function showNewJobModal() {
+    window.location.href = '/';
+}
+</script>
+{% endblock %}
