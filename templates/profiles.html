@@ -1,0 +1,942 @@
+{% extends "base.html" %}
+
+{% block title %}Resume Profiles{% endblock %}
+
+{% block content %}
+<div class="profiles-layout">
+    <!-- Left: Profile List -->
+    <div class="profiles-sidebar">
+        <div class="sidebar-header">
+            <h2>Profiles</h2>
+            <button class="btn btn-primary btn-sm" onclick="showNewProfileModal()">+ New</button>
+        </div>
+        
+        <div class="profiles-list">
+            {% for profile in profiles %}
+            <div class="profile-card {{ 'active' if loop.first else '' }}" 
+                 data-profile-id="{{ profile.id }}"
+                 onclick="selectProfile({{ profile.id }})">
+                <div class="profile-icon" style="background-color: {{ profile.color }}20; color: {{ profile.color }}">
+                    <i class="fas {{ profile.icon }}"></i>
+                </div>
+                <div class="profile-info">
+                    <h4>{{ profile.name }}</h4>
+                    {% if profile.description %}
+                    <p>{{ profile.description }}</p>
+                    {% endif %}
+                </div>
+                {% if profile.is_default %}
+                <span class="default-badge">Default</span>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="empty-state-small">
+                <p>No profiles yet</p>
+                <button class="btn btn-primary btn-sm" onclick="showNewProfileModal()">Create First Profile</button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Right: Profile Editor -->
+    <div class="profile-editor">
+        {% if profiles %}
+        <div class="editor-header">
+            <div class="editor-title">
+                <h2 id="editorProfileName">{{ profiles[0].name if profiles else 'Select a Profile' }}</h2>
+                <p id="editorProfileDesc">{{ profiles[0].description if profiles else '' }}</p>
+            </div>
+            <div class="editor-actions">
+                <a id="previewBtn" href="/profile/{{ profiles[0].id if profiles else 1 }}/preview" target="_blank" class="btn btn-secondary">
+                    <i class="fas fa-eye"></i> Preview
+                </a>
+                <button class="btn btn-secondary" onclick="editProfileDetails()">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="btn btn-danger" onclick="deleteCurrentProfile()">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="editor-content">
+            <!-- Jobs Selection -->
+            <div class="selection-section">
+                <div class="section-header" onclick="toggleSection('jobs')">
+                    <h3><i class="fas fa-briefcase"></i> Jobs</h3>
+                    <span class="selection-count" id="jobsCount">0 selected</span>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="section-content" id="jobsSection">
+                    <div class="selection-grid">
+                        {% for job in jobs %}
+                        <label class="selection-item">
+                            <input type="checkbox" name="jobs" value="{{ job.id }}" onchange="updateSelection('jobs')">
+                            <div class="item-content">
+                                <strong>{{ job.title }}</strong>
+                                <span>{{ job.company }}</span>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Education Selection -->
+            <div class="selection-section">
+                <div class="section-header" onclick="toggleSection('education')">
+                    <h3><i class="fas fa-graduation-cap"></i> Education</h3>
+                    <span class="selection-count" id="educationCount">0 selected</span>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="section-content" id="educationSection">
+                    <div class="selection-grid">
+                        {% for edu in education %}
+                        <label class="selection-item">
+                            <input type="checkbox" name="education" value="{{ edu.id }}" onchange="updateSelection('education')">
+                            <div class="item-content">
+                                <strong>{{ edu.degree }}</strong>
+                                <span>{{ edu.school }}</span>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Projects Selection -->
+            <div class="selection-section">
+                <div class="section-header" onclick="toggleSection('projects')">
+                    <h3><i class="fas fa-project-diagram"></i> Projects</h3>
+                    <span class="selection-count" id="projectsCount">0 selected</span>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="section-content" id="projectsSection">
+                    <div class="selection-grid">
+                        {% for proj in projects %}
+                        <label class="selection-item">
+                            <input type="checkbox" name="projects" value="{{ proj.id }}" onchange="updateSelection('projects')">
+                            <div class="item-content">
+                                <strong>{{ proj.name }}</strong>
+                                <span>{{ proj.description[:50] if proj.description else '' }}...</span>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Skill Categories Selection -->
+            <div class="selection-section">
+                <div class="section-header" onclick="toggleSection('skills')">
+                    <h3><i class="fas fa-tools"></i> Skill Categories</h3>
+                    <span class="selection-count" id="skillsCount">0 selected</span>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="section-content" id="skillsSection">
+                    <div class="selection-grid">
+                        {% for cat in skill_categories %}
+                        <label class="selection-item skill-category">
+                            <input type="checkbox" name="skill_categories" value="{{ cat.id }}" onchange="updateSelection('skill_categories')">
+                            <div class="item-content">
+                                <strong>{{ cat.name }}</strong>
+                                {% if cat.use_case %}
+                                <span class="use-case">{{ cat.use_case }}</span>
+                                {% endif %}
+                                <div class="skill-tags">
+                                    {% for skill in cat.skills[:5] %}
+                                    <span class="mini-tag">{{ skill.name }}</span>
+                                    {% endfor %}
+                                    {% if cat.skills|length > 5 %}
+                                    <span class="mini-tag more">+{{ cat.skills|length - 5 }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Custom Summary -->
+            <div class="selection-section">
+                <div class="section-header" onclick="toggleSection('summary')">
+                    <h3><i class="fas fa-align-left"></i> Custom Summary</h3>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="section-content" id="summarySection">
+                    <textarea id="summaryText" rows="4" placeholder="Optional custom summary for this profile..." onchange="updateSummary()"></textarea>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-editor">
+            <i class="fas fa-user-circle"></i>
+            <h3>Create Your First Profile</h3>
+            <p>Profiles let you tailor your resume for different job types</p>
+            <button class="btn btn-primary" onclick="showNewProfileModal()">+ Create Profile</button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- New/Edit Profile Modal -->
+<div id="profileModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="profileModalTitle">New Profile</h2>
+            <button class="modal-close" onclick="closeModal('profileModal')">&times;</button>
+        </div>
+        <form id="profileForm" onsubmit="saveProfile(event)">
+            <input type="hidden" id="profileId" value="">
+            <div class="form-group">
+                <label for="profileName">Profile Name</label>
+                <input type="text" id="profileName" placeholder="e.g., Frontend Developer" required>
+            </div>
+            <div class="form-group">
+                <label for="profileDescription">Description</label>
+                <input type="text" id="profileDescription" placeholder="e.g., For frontend/UI roles at tech companies">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="profileIcon">Icon</label>
+                    <select id="profileIcon">
+                        <option value="fa-file-alt">📄 Document</option>
+                        <option value="fa-code">💻 Code</option>
+                        <option value="fa-shield-alt">🛡️ Security</option>
+                        <option value="fa-database">🗄️ Database</option>
+                        <option value="fa-cloud">☁️ Cloud</option>
+                        <option value="fa-mobile-alt">📱 Mobile</option>
+                        <option value="fa-chart-line">📈 Analytics</option>
+                        <option value="fa-robot">🤖 AI/ML</option>
+                        <option value="fa-briefcase">💼 Business</option>
+                        <option value="fa-rocket">🚀 Startup</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="profileColor">Color</label>
+                    <input type="color" id="profileColor" value="#58a6ff">
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('profileModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Profile</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+/* CSS Variables */
+:root {
+    --card-bg: #1e1e1e;
+    --border-color: #333;
+    --text-primary: #e0e0e0;
+    --text-secondary: #888;
+    --hover-bg: #2a2a2a;
+    --accent-color: #4a9eff;
+    --accent-bg: rgba(74, 158, 255, 0.15);
+    --input-bg: #2a2a2a;
+    --success-color: #3fb950;
+    --danger-color: #f85149;
+}
+
+.profiles-layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 24px;
+    height: calc(100vh - 40px);
+    padding: 20px;
+}
+
+/* Sidebar */
+.profiles-sidebar {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-header h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+}
+
+.profiles-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+}
+
+.profile-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 8px;
+    position: relative;
+}
+
+.profile-card:hover {
+    background: var(--hover-bg);
+}
+
+.profile-card.active {
+    background: var(--accent-bg);
+    border: 1px solid var(--accent-color);
+}
+
+.profile-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.profile-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.profile-info h4 {
+    margin: 0 0 2px 0;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.profile-info p {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.default-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 0.65rem;
+    background: var(--success-color);
+    color: #000;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+/* Editor */
+.profile-editor {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.editor-title h2 {
+    margin: 0 0 4px 0;
+    font-size: 1.4rem;
+    color: var(--text-primary);
+}
+
+.editor-title p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.editor-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.editor-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+}
+
+/* Selection Sections */
+.selection-section {
+    margin-bottom: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--hover-bg);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.section-header:hover {
+    background: #333;
+}
+
+.section-header h3 {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-header h3 i {
+    color: var(--accent-color);
+    width: 20px;
+}
+
+.selection-count {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    background: var(--card-bg);
+    padding: 4px 10px;
+    border-radius: 12px;
+}
+
+.toggle-icon {
+    color: var(--text-secondary);
+    transition: transform 0.2s;
+}
+
+.section-content {
+    padding: 16px;
+    display: none;
+}
+
+.section-content.open {
+    display: block;
+}
+
+.selection-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 10px;
+}
+
+.selection-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    background: var(--hover-bg);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.selection-item:hover {
+    border-color: var(--border-color);
+}
+
+.selection-item input[type="checkbox"] {
+    margin-top: 3px;
+    accent-color: var(--accent-color);
+    width: 18px;
+    height: 18px;
+}
+
+.selection-item input[type="checkbox"]:checked + .item-content {
+    color: var(--accent-color);
+}
+
+.item-content {
+    flex: 1;
+}
+
+.item-content strong {
+    display: block;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    margin-bottom: 2px;
+}
+
+.item-content span {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.item-content .use-case {
+    display: block;
+    font-style: italic;
+    margin-bottom: 8px;
+}
+
+.skill-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+.mini-tag {
+    font-size: 0.7rem;
+    background: var(--card-bg);
+    color: var(--text-secondary);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.mini-tag.more {
+    background: var(--accent-bg);
+    color: var(--accent-color);
+}
+
+/* Summary textarea */
+#summaryText {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    resize: vertical;
+}
+
+#summaryText:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+/* Empty states */
+.empty-state-small {
+    text-align: center;
+    padding: 30px 20px;
+}
+
+.empty-state-small p {
+    margin: 0 0 12px 0;
+    color: var(--text-secondary);
+}
+
+.empty-editor {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    padding: 40px;
+}
+
+.empty-editor i {
+    font-size: 4rem;
+    color: var(--border-color);
+    margin-bottom: 20px;
+}
+
+.empty-editor h3 {
+    margin: 0 0 8px 0;
+    color: var(--text-primary);
+}
+
+.empty-editor p {
+    margin: 0 0 20px 0;
+    color: var(--text-secondary);
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 450px;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--text-primary);
+}
+
+.modal-close {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+#profileForm {
+    padding: 24px;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+.form-group input[type="color"] {
+    height: 42px;
+    padding: 4px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 100px;
+    gap: 16px;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+/* Buttons */
+.btn {
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+}
+
+.btn-primary {
+    background: var(--accent-color);
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background: #3a8eef;
+}
+
+.btn-secondary {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    background: #333;
+}
+
+.btn-danger {
+    background: transparent;
+    color: var(--danger-color);
+    border: 1px solid var(--danger-color);
+}
+
+.btn-danger:hover {
+    background: rgba(248, 81, 73, 0.1);
+}
+</style>
+
+<script>
+let currentProfileId = {{ profiles[0].id if profiles else 'null' }};
+let profilesData = {{ profiles | tojson | safe }};
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', () => {
+    if (currentProfileId) {
+        loadProfileSelections(currentProfileId);
+    }
+    // Open first section by default
+    toggleSection('jobs');
+});
+
+function selectProfile(profileId) {
+    currentProfileId = profileId;
+    
+    // Update active state
+    document.querySelectorAll('.profile-card').forEach(card => {
+        card.classList.remove('active');
+    });
+    document.querySelector(`[data-profile-id="${profileId}"]`).classList.add('active');
+    
+    // Load profile data
+    const profile = profilesData.find(p => p.id === profileId);
+    if (profile) {
+        document.getElementById('editorProfileName').textContent = profile.name;
+        document.getElementById('editorProfileDesc').textContent = profile.description || '';
+        document.getElementById('previewBtn').href = `/profile/${profileId}/preview`;
+        loadProfileSelections(profileId);
+    }
+}
+
+function loadProfileSelections(profileId) {
+    const profile = profilesData.find(p => p.id === profileId);
+    if (!profile) return;
+    
+    // Clear all checkboxes
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+    
+    // Check selected jobs
+    profile.included_jobs.forEach(id => {
+        const cb = document.querySelector(`input[name="jobs"][value="${id}"]`);
+        if (cb) cb.checked = true;
+    });
+    
+    // Check selected education
+    profile.included_education.forEach(id => {
+        const cb = document.querySelector(`input[name="education"][value="${id}"]`);
+        if (cb) cb.checked = true;
+    });
+    
+    // Check selected projects
+    profile.included_projects.forEach(id => {
+        const cb = document.querySelector(`input[name="projects"][value="${id}"]`);
+        if (cb) cb.checked = true;
+    });
+    
+    // Check selected skill categories
+    profile.included_skill_categories.forEach(id => {
+        const cb = document.querySelector(`input[name="skill_categories"][value="${id}"]`);
+        if (cb) cb.checked = true;
+    });
+    
+    // Set summary
+    document.getElementById('summaryText').value = profile.summary_text || '';
+    
+    // Update counts
+    updateAllCounts();
+}
+
+function toggleSection(section) {
+    const content = document.getElementById(section + 'Section');
+    const header = content.previousElementSibling;
+    const icon = header.querySelector('.toggle-icon');
+    
+    content.classList.toggle('open');
+    icon.style.transform = content.classList.contains('open') ? 'rotate(180deg)' : '';
+}
+
+function updateSelection(type) {
+    updateCount(type);
+    saveCurrentProfile();
+}
+
+function updateCount(type) {
+    const checkboxes = document.querySelectorAll(`input[name="${type}"]:checked`);
+    const countEl = document.getElementById(type.replace('skill_categories', 'skills') + 'Count');
+    if (countEl) {
+        countEl.textContent = `${checkboxes.length} selected`;
+    }
+}
+
+function updateAllCounts() {
+    ['jobs', 'education', 'projects', 'skill_categories'].forEach(type => {
+        updateCount(type);
+    });
+}
+
+function updateSummary() {
+    saveCurrentProfile();
+}
+
+async function saveCurrentProfile() {
+    if (!currentProfileId) return;
+    
+    const data = {
+        included_jobs: getSelectedValues('jobs'),
+        included_education: getSelectedValues('education'),
+        included_projects: getSelectedValues('projects'),
+        included_skill_categories: getSelectedValues('skill_categories'),
+        summary_text: document.getElementById('summaryText').value
+    };
+    
+    try {
+        await fetch(`/api/profiles/${currentProfileId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        // Update local data
+        const profile = profilesData.find(p => p.id === currentProfileId);
+        if (profile) {
+            Object.assign(profile, data);
+        }
+    } catch (error) {
+        console.error('Error saving profile:', error);
+    }
+}
+
+function getSelectedValues(name) {
+    return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`))
+        .map(cb => parseInt(cb.value));
+}
+
+function showNewProfileModal() {
+    document.getElementById('profileModalTitle').textContent = 'New Profile';
+    document.getElementById('profileId').value = '';
+    document.getElementById('profileName').value = '';
+    document.getElementById('profileDescription').value = '';
+    document.getElementById('profileIcon').value = 'fa-file-alt';
+    document.getElementById('profileColor').value = '#58a6ff';
+    document.getElementById('profileModal').classList.add('active');
+}
+
+function editProfileDetails() {
+    const profile = profilesData.find(p => p.id === currentProfileId);
+    if (!profile) return;
+    
+    document.getElementById('profileModalTitle').textContent = 'Edit Profile';
+    document.getElementById('profileId').value = profile.id;
+    document.getElementById('profileName').value = profile.name;
+    document.getElementById('profileDescription').value = profile.description || '';
+    document.getElementById('profileIcon').value = profile.icon;
+    document.getElementById('profileColor').value = profile.color;
+    document.getElementById('profileModal').classList.add('active');
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('active');
+}
+
+async function saveProfile(event) {
+    event.preventDefault();
+    
+    const id = document.getElementById('profileId').value;
+    const data = {
+        name: document.getElementById('profileName').value,
+        description: document.getElementById('profileDescription').value,
+        icon: document.getElementById('profileIcon').value,
+        color: document.getElementById('profileColor').value
+    };
+    
+    try {
+        if (id) {
+            await fetch(`/api/profiles/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+        } else {
+            await fetch('/api/profiles', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+        }
+        window.location.reload();
+    } catch (error) {
+        console.error('Error saving profile:', error);
+        alert('Failed to save profile');
+    }
+}
+
+async function deleteCurrentProfile() {
+    if (!currentProfileId) return;
+    if (!confirm('Delete this profile? This cannot be undone.')) return;
+    
+    try {
+        await fetch(`/api/profiles/${currentProfileId}`, {
+            method: 'DELETE'
+        });
+        window.location.reload();
+    } catch (error) {
+        console.error('Error deleting profile:', error);
+        alert('Failed to delete profile');
+    }
+}
+
+// Close modal on outside click
+document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.classList.remove('active');
+        }
+    });
+});
+</script>
+{% endblock %}
+

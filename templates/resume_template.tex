@@ -160,46 +160,62 @@
     \sbox\ANDbox{$|$}
 
     \begin{header}
-        \fontsize{25 pt}{25 pt}\selectfont Yannick Vetter
+        \fontsize{25 pt}{25 pt}\selectfont \VAR{user.name}
 
         \vspace{5 pt}
 
         \normalsize
-        \mbox{\hrefWithoutArrow{mailto:yannick.vetter@ndsu.edu}{yannick.vetter@ndsu.edu}}%
+        \BLOCK{if user.email}
+        \mbox{\hrefWithoutArrow{mailto:\VAR{user.email}}{\VAR{user.email}}}%
+        \BLOCK{endif}
+        \BLOCK{if user.phone}
         \kern 5.0 pt%
         \AND%
         \kern 5.0 pt%
-        \mbox{\hrefWithoutArrow{tel:+1701-730-4709}{701-730-4709}}%
+        \mbox{\hrefWithoutArrow{tel:+1\VAR{user.phone}}{\VAR{user.phone}}}%
+        \BLOCK{endif}
+        \BLOCK{if user.website}
         \kern 5.0 pt%
         \AND%
         \kern 5.0 pt%
-        \mbox{\hrefWithoutArrow{https://yannickvetter.com/}{yannickvetter.com}}%
+        \mbox{\hrefWithoutArrow{\VAR{user.website}}{\VAR{user.website}}}%
+        \BLOCK{endif}
+        \BLOCK{if user.linkedin}
         \kern 5.0 pt%
         \AND%
         \kern 5.0 pt%
-        \mbox{\hrefWithoutArrow{https://linkedin.com/in/yannickvetter}{linkedin.com/in/yannickvetter}}%
+        \mbox{\hrefWithoutArrow{\VAR{user.linkedin}}{\VAR{user.linkedin}}}%
+        \BLOCK{endif}
+        \BLOCK{if user.github}
         \kern 5.0 pt%
         \AND%
         \kern 5.0 pt%
-        \mbox{\hrefWithoutArrow{https://github.com/yvetter438}{github.com/yvetter438}}%
+        \mbox{\hrefWithoutArrow{\VAR{user.github}}{\VAR{user.github}}}%
+        \BLOCK{endif}
     \end{header}
 
     \vspace{5 pt - 0.3 cm}
 
+    \BLOCK{if education}
     \section{Education}
 
+    \BLOCK{for edu in education}
     \begin{twocolentry}{
-        Aug 2021 – May 2025
+        \VAR{edu.dates}
     }
-        \textbf{North Dakota State University}, BS in Computer Science
+        \textbf{\VAR{edu.institution}}, \VAR{edu.degree}\BLOCK{if edu.field_of_study} in \VAR{edu.field_of_study}\BLOCK{endif}
     \end{twocolentry}
 
+    \BLOCK{if edu.description}
     \vspace{0.10 cm}
     \begin{onecolentry}
         \begin{highlights}
-            \item \textbf{Coursework:} Computer Architecture, Data Structures and Algorithms, Networking and Parallel Computation
+            \item \VAR{edu.description}
         \end{highlights}
     \end{onecolentry}
+    \BLOCK{endif}
+    \BLOCK{endfor}
+    \BLOCK{endif}
 
     \section{Experience}
 

@@ -24,6 +24,11 @@
                     <i class="fas fa-briefcase"></i>
                 </a>
                 
+                <!-- Education -->
+                <a href="/education" class="nav-button {% if request.path == '/education' %}active{% endif %}" aria-label="Education" title="Education">
+                    <i class="fas fa-graduation-cap"></i>
+                </a>
+                
                 <!-- Journal -->
                 <a href="/journal" class="nav-button {% if request.path == '/journal' %}active{% endif %}" aria-label="Journal" title="Work Journal">
                     <i class="fas fa-book"></i>
@@ -59,6 +64,8 @@
         const path = window.location.pathname;
         if (path === '/') {
             showNewJobModal();
+        } else if (path === '/education') {
+            showNewEducationModal();
         } else if (path === '/resumes') {
             showNewApplicationModal();
         } else if (path === '/journal') {

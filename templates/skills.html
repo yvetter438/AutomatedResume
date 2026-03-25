@@ -1,0 +1,645 @@
+{% extends "base.html" %}
+
+{% block title %}Technical Skills Bank{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Technical Skills Bank</h1>
+        <p class="subtitle">Manage your skill categories and individual skills for tailored resumes</p>
+    </div>
+    <button class="btn btn-primary" onclick="showAddCategoryModal()">+ Add Category</button>
+</div>
+
+<div class="skills-container">
+    {% for category in categories %}
+    <div class="skill-category-card" data-category-id="{{ category.id }}">
+        <div class="category-header">
+            <div class="category-info">
+                <h3 class="category-name">{{ category.name }}</h3>
+                {% if category.use_case %}
+                <p class="category-use-case">{{ category.use_case }}</p>
+                {% endif %}
+            </div>
+            <div class="category-actions">
+                <button class="btn-icon" onclick="editCategory({{ category.id }}, '{{ category.name }}', '{{ category.use_case | e }}')" title="Edit Category">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                </button>
+                <button class="btn-icon btn-danger" onclick="deleteCategory({{ category.id }}, '{{ category.name }}')" title="Delete Category">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <div class="skills-list">
+            {% for skill in category.skills %}
+            <span class="skill-tag" data-skill-id="{{ skill.id }}">
+                {{ skill.name }}
+                <button class="skill-remove" onclick="deleteSkill({{ skill.id }}, '{{ skill.name }}')">&times;</button>
+            </span>
+            {% endfor %}
+            <button class="add-skill-btn" onclick="showAddSkillModal({{ category.id }}, '{{ category.name }}')">+ Add Skill</button>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h3>No skill categories yet</h3>
+        <p>Create your first category to start building your skills bank</p>
+        <button class="btn btn-primary" onclick="showAddCategoryModal()">+ Add Category</button>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Add Category Modal -->
+<div id="addCategoryModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="categoryModalTitle">Add Skill Category</h2>
+            <button class="modal-close" onclick="closeModal('addCategoryModal')">&times;</button>
+        </div>
+        <form id="categoryForm" onsubmit="saveCategory(event)">
+            <input type="hidden" id="categoryId" value="">
+            <div class="form-group">
+                <label for="categoryName">Category Name</label>
+                <input type="text" id="categoryName" placeholder="e.g., Programming Languages" required>
+            </div>
+            <div class="form-group">
+                <label for="categoryUseCase">Use Case (when to include this category)</label>
+                <textarea id="categoryUseCase" rows="3" placeholder="e.g., Use for almost all roles except pure business/VC"></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addCategoryModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Category</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Skill Modal -->
+<div id="addSkillModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add Skills to <span id="skillCategoryName"></span></h2>
+            <button class="modal-close" onclick="closeModal('addSkillModal')">&times;</button>
+        </div>
+        <form id="skillForm" onsubmit="saveSkills(event)">
+            <input type="hidden" id="skillCategoryId" value="">
+            <div class="form-group">
+                <label for="skillNames">Skills (comma-separated)</label>
+                <textarea id="skillNames" rows="4" placeholder="e.g., Python, JavaScript, TypeScript, SQL" required></textarea>
+                <small class="form-hint">Enter multiple skills separated by commas</small>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addSkillModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add Skills</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Preset Categories Quick Add -->
+<div class="preset-section">
+    <h3>Quick Add Preset Categories</h3>
+    <p class="subtitle">Click to add pre-configured skill categories</p>
+    <div class="preset-grid">
+        <button class="preset-btn" onclick="addPresetCategory('Programming Languages', 'Use for almost all roles except pure business/VC', ['TypeScript', 'JavaScript', 'Python', 'SQL', 'HTML', 'CSS'])">
+            Programming Languages
+        </button>
+        <button class="preset-btn" onclick="addPresetCategory('Frameworks & Libraries', 'Use for software, product, startup builder roles', ['React Native', 'React', 'Next.js', 'Flask', 'Node.js', 'Express'])">
+            Frameworks & Libraries
+        </button>
+        <button class="preset-btn" onclick="addPresetCategory('Backend & Databases', 'Use if you want to show engineering depth', ['Supabase', 'Firebase', 'Postgres', 'SQLite', 'MongoDB', 'Redis'])">
+            Backend & Databases
+        </button>
+        <button class="preset-btn" onclick="addPresetCategory('Cloud & DevOps', 'Useful for technical PM, founder roles, early-stage startup roles', ['Vercel', 'AWS', 'Docker', 'GitHub Actions', 'CI/CD', 'Kubernetes'])">
+            Cloud & DevOps
+        </button>
+        <button class="preset-btn" onclick="addPresetCategory('APIs & Integrations', 'Highly useful across PM, startup, product, or VC roles - signals you can build scrappy prototypes', ['Stripe', 'OAuth', 'REST APIs', 'GraphQL', 'Twilio', 'SendGrid'])">
+            APIs & Integrations
+        </button>
+        <button class="preset-btn" onclick="addPresetCategory('Analytics & Monitoring', 'Valuable for PM and startup roles', ['PostHog', 'Sentry', 'Google Analytics', 'Mixpanel', 'Amplitude'])">
+            Analytics & Monitoring
+        </button>
+        <button class="preset-btn" onclick="addPresetCategory('AI / ML / Data', 'Useful for VC, startup, PM', ['RAG Workflows', 'Vector Embeddings', 'Prompt Engineering', 'LLM APIs', 'OpenAI', 'Langchain'])">
+            AI / ML / Data
+        </button>
+        <button class="preset-btn" onclick="addPresetCategory('Product & Prototyping', 'Great for product roles, consulting roles, hybrid roles', ['Figma', 'Miro', 'Notion', 'Jira', 'Linear', 'Whimsical'])">
+            Product & Prototyping
+        </button>
+        <button class="preset-btn" onclick="addPresetCategory('Data Visualization & BI', 'Useful for VC, consulting, strategy, or product', ['Tableau', 'Power BI', 'Google Data Studio', 'Looker', 'Metabase'])">
+            Data Visualization & BI
+        </button>
+        <button class="preset-btn" onclick="addPresetCategory('Business & Finance', 'Good for VC, investing, consulting roles', ['Excel (Advanced)', 'DCF Modeling', 'Cap Tables', 'Airtable', 'Financial Modeling'])">
+            Business & Finance
+        </button>
+        <button class="preset-btn" onclick="addPresetCategory('Research & Due Diligence', 'Useful for VC roles', ['PitchBook', 'Crunchbase', 'SimilarWeb', 'SEC EDGAR', 'LinkedIn Sales Navigator'])">
+            Research & Due Diligence
+        </button>
+        <button class="preset-btn" onclick="addPresetCategory('Customer Discovery', 'Good for entrepreneurship, PM, incubator roles', ['User Interviews', 'JTBD Analysis', 'A/B Testing', 'Survey Design', 'Usability Testing'])">
+            Customer Discovery
+        </button>
+        <button class="preset-btn" onclick="addPresetCategory('Growth & GTM', 'Applies to startup, PM, growth roles', ['Segment', 'Mailchimp', 'HubSpot', 'App Store Optimization', 'SEO', 'Paid Ads'])">
+            Growth & GTM
+        </button>
+        <button class="preset-btn" onclick="addPresetCategory('Version Control', 'Use in any vaguely technical role', ['Git', 'GitHub', 'GitLab', 'Branching Workflows', 'Code Reviews', 'Pull Requests'])">
+            Version Control
+        </button>
+        <button class="preset-btn" onclick="addPresetCategory('Security & Compliance', 'Useful in PM, VC (infra), or security-adjacent roles', ['OAuth', 'JWT', 'RLS Security', 'OWASP', 'SSL/TLS', 'Data Privacy'])">
+            Security & Compliance
+        </button>
+        <button class="preset-btn" onclick="addPresetCategory('Low-Code & Builder Tools', 'Great for entrepreneurship programs - signals speed and versatility', ['Bubble', 'Webflow', 'Zapier', 'Retool', 'Airtable', 'Make'])">
+            Low-Code & Builder Tools
+        </button>
+    </div>
+</div>
+
+<style>
+/* CSS Variables for dark theme */
+:root {
+    --card-bg: #1e1e1e;
+    --border-color: #333;
+    --text-primary: #e0e0e0;
+    --text-secondary: #888;
+    --hover-bg: #2a2a2a;
+    --accent-color: #4a9eff;
+    --accent-bg: rgba(74, 158, 255, 0.15);
+    --input-bg: #2a2a2a;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    padding: 0;
+}
+
+.page-header h1 {
+    margin: 0 0 4px 0;
+    font-size: 1.8rem;
+    color: var(--text-primary);
+}
+
+.page-header .subtitle {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.skills-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 40px;
+}
+
+.skill-category-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.category-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.category-info {
+    flex: 1;
+}
+
+.category-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 4px 0;
+}
+
+.category-use-case {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0;
+    font-style: italic;
+}
+
+.category-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-icon {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 6px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+}
+
+.btn-icon:hover {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+}
+
+.btn-icon.btn-danger:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.skills-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.skill-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent-bg);
+    color: var(--accent-color);
+    padding: 6px 10px;
+    border-radius: 16px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.skill-remove {
+    background: transparent;
+    border: none;
+    color: var(--accent-color);
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.skill-remove:hover {
+    opacity: 1;
+}
+
+.add-skill-btn {
+    background: transparent;
+    border: 1px dashed var(--border-color);
+    border-radius: 16px;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.add-skill-btn:hover {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: var(--card-bg);
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+}
+
+.empty-state h3 {
+    margin: 0 0 8px 0;
+    color: var(--text-primary);
+}
+
+.empty-state p {
+    margin: 0 0 20px 0;
+    color: var(--text-secondary);
+}
+
+/* Preset Section */
+.preset-section {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 24px;
+    margin-top: 40px;
+}
+
+.preset-section h3 {
+    margin: 0 0 4px 0;
+    color: var(--text-primary);
+}
+
+.preset-section .subtitle {
+    margin: 0 0 20px 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.preset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.preset-btn {
+    background: var(--hover-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+}
+
+.preset-btn:hover {
+    background: var(--accent-bg);
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--text-primary);
+}
+
+.modal-close {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    line-height: 1;
+}
+
+.modal-close:hover {
+    color: var(--text-primary);
+}
+
+#categoryForm, #skillForm {
+    padding: 24px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+.form-hint {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 10px;
+}
+</style>
+
+<script>
+function showAddCategoryModal() {
+    document.getElementById('categoryModalTitle').textContent = 'Add Skill Category';
+    document.getElementById('categoryId').value = '';
+    document.getElementById('categoryName').value = '';
+    document.getElementById('categoryUseCase').value = '';
+    document.getElementById('addCategoryModal').classList.add('active');
+}
+
+function editCategory(id, name, useCase) {
+    document.getElementById('categoryModalTitle').textContent = 'Edit Skill Category';
+    document.getElementById('categoryId').value = id;
+    document.getElementById('categoryName').value = name;
+    document.getElementById('categoryUseCase').value = useCase;
+    document.getElementById('addCategoryModal').classList.add('active');
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('active');
+}
+
+async function saveCategory(event) {
+    event.preventDefault();
+    
+    const id = document.getElementById('categoryId').value;
+    const name = document.getElementById('categoryName').value;
+    const useCase = document.getElementById('categoryUseCase').value;
+    
+    const url = id ? `/api/skills/categories/${id}` : '/api/skills/categories';
+    const method = id ? 'PUT' : 'POST';
+    
+    try {
+        const response = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, use_case: useCase })
+        });
+        
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            alert('Failed to save category');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error saving category');
+    }
+}
+
+async function deleteCategory(id, name) {
+    if (!confirm(`Delete category "${name}" and all its skills?`)) return;
+    
+    try {
+        const response = await fetch(`/api/skills/categories/${id}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            alert('Failed to delete category');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error deleting category');
+    }
+}
+
+function showAddSkillModal(categoryId, categoryName) {
+    document.getElementById('skillCategoryId').value = categoryId;
+    document.getElementById('skillCategoryName').textContent = categoryName;
+    document.getElementById('skillNames').value = '';
+    document.getElementById('addSkillModal').classList.add('active');
+}
+
+async function saveSkills(event) {
+    event.preventDefault();
+    
+    const categoryId = document.getElementById('skillCategoryId').value;
+    const skillNames = document.getElementById('skillNames').value
+        .split(',')
+        .map(s => s.trim())
+        .filter(s => s);
+    
+    if (skillNames.length === 0) {
+        alert('Please enter at least one skill');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/skills/bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ category_id: categoryId, skills: skillNames })
+        });
+        
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            alert('Failed to add skills');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error adding skills');
+    }
+}
+
+async function deleteSkill(id, name) {
+    if (!confirm(`Delete skill "${name}"?`)) return;
+    
+    try {
+        const response = await fetch(`/api/skills/${id}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            document.querySelector(`[data-skill-id="${id}"]`).remove();
+        } else {
+            alert('Failed to delete skill');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error deleting skill');
+    }
+}
+
+async function addPresetCategory(name, useCase, skills) {
+    try {
+        // First create the category
+        const catResponse = await fetch('/api/skills/categories', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, use_case: useCase })
+        });
+        
+        if (!catResponse.ok) {
+            alert('Failed to create category');
+            return;
+        }
+        
+        const catData = await catResponse.json();
+        
+        // Then add the skills
+        const skillsResponse = await fetch('/api/skills/bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ category_id: catData.id, skills: skills })
+        });
+        
+        if (skillsResponse.ok) {
+            window.location.reload();
+        } else {
+            alert('Category created but failed to add skills');
+            window.location.reload();
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error adding preset category');
+    }
+}
+
+// Close modal on outside click
+document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.classList.remove('active');
+        }
+    });
+});
+</script>
+{% endblock %}
+

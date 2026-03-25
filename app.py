@@ -13,7 +13,10 @@ from database import (
     # Journal functions
     create_journal_entry, get_journal_entries, get_journal_entry,
     update_journal_entry, delete_journal_entry, get_journal_stats,
-    get_entries_by_date_range, get_all_tags
+    get_entries_by_date_range, get_all_tags,
+    # Education functions
+    get_all_education, add_education, update_education, delete_education,
+    update_education_order
 )
 from ai_service import test_ai_connection, AIModel, AIService
 import sqlite3
@@ -32,8 +35,16 @@ def generate_pdf(mode='handcrafted', model_type='openai'):
     else:
         all_jobs = get_ai_ordered_jobs(model_type)
     
-    # Take only first 4 jobs and their first 3 points
-    resume_jobs = all_jobs[:4]
+    # Get settings for resume limits
+    settings = get_settings()
+    jobs_on_resume = settings['jobs_on_resume']
+    points_per_job = settings['points_per_job']
+    
+    # Take limited jobs and points
+    resume_jobs = all_jobs[:jobs_on_resume]
+    
+    # Get education
+    education_list = get_all_education()
     
     # Convert to template format
     experience_data = {
@@ -42,8 +53,21 @@ def generate_pdf(mode='handcrafted', model_type='openai'):
             'title': job['title'],
             'company': job['company'],
             'location': job['location'],
-            'points': job['resume_points']
+            'points': job['points'][:points_per_job]
         } for i, job in enumerate(resume_jobs)
+    }
+    
+    # Add education data
+    experience_data['education'] = education_list
+    
+    # Add user info from settings
+    experience_data['user'] = {
+        'name': settings['full_name'],
+        'email': settings['email'],
+        'phone': settings['phone'],
+        'website': settings['website_url'],
+        'linkedin': settings['linkedin_url'],
+        'github': settings['github_url']
     }
     
     # Define paths
@@ -570,6 +594,63 @@ def journal_calendar():
     
     entries = get_entries_by_date_range(start_date, end_date, job_id)
     return jsonify(entries)
+
+# ============================================
+# Education Routes
+# ============================================
+
+@app.route('/education')
+def education():
+    """Education management page"""
+    education_list = get_all_education()
+    return render_template('education.html', education=education_list)
+
+@app.route('/add-education', methods=['POST'])
+def create_education():
+    """Add new education entry"""
+    try:
+        institution = request.form['institution']
+        degree = request.form['degree']
+        field_of_study = request.form.get('field_of_study', '')
+        location = request.form.get('location', '')
+        start_date = request.form.get('start_date', '')
+        current = 'current' in request.form
+        end_date = None if current else request.form.get('end_date', '')
+        gpa = request.form.get('gpa', '')
+        description = request.form.get('description', '')
+        
+        add_education(institution, degree, field_of_study, location,
+                     start_date, end_date, current, gpa, description)
+        
+        return redirect(url_for('education'))
+    except Exception as e:
+        print(f"Error adding education: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/delete-education/<int:edu_id>', methods=['POST'])
+def delete_education_route(edu_id):
+    """Delete education entry"""
+    try:
+        delete_education(edu_id)
+        return redirect(url_for('education'))
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/update-education-order', methods=['POST'])
+def update_education_order_route():
+    """Update education display order"""
+    try:
+        edu_orders = request.json['education']
+        update_education_order(edu_orders)
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)})
+
+@app.route('/api/education')
+def api_education():
+    """API endpoint to get all education"""
+    education_list = get_all_education()
+    return jsonify(education_list)
 
 if __name__ == '__main__':
     app.run(debug=True)

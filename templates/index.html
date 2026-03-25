@@ -8,6 +8,31 @@
         <p class="page-subtitle">Your professional history and accomplishments</p>
     </header>
     
+    <!-- Resume Generation Panel -->
+    <div class="resume-generation-panel">
+        <div class="panel-header">
+            <h3><i class="fas fa-file-pdf"></i> Generate Resume</h3>
+        </div>
+        <div class="panel-content">
+            <div class="generation-options">
+                <button onclick="generateDefaultResume()" class="gen-button primary">
+                    <i class="fas fa-download"></i>
+                    <div>
+                        <strong>Quick Resume</strong>
+                        <span>Use current order</span>
+                    </div>
+                </button>
+                <button onclick="showAIOptimizeModal()" class="gen-button secondary">
+                    <i class="fas fa-magic"></i>
+                    <div>
+                        <strong>AI-Optimized</strong>
+                        <span>Paste job description</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+    
     <!-- Jobs Section -->
     <section class="jobs-section">
         {% if jobs %}
@@ -88,6 +113,53 @@
         </div>
         {% endif %}
     </section>
+</div>
+
+<!-- AI Optimize Modal -->
+<div id="aiOptimizeModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeAIOptimizeModal()">&times;</span>
+        <h2 class="modal-title">AI-Optimize Resume</h2>
+        <p class="modal-subtitle">Paste the job description below and AI will select and reorder your best bullet points</p>
+        
+        <form id="aiOptimizeForm" onsubmit="optimizeWithAI(event)">
+            <div class="form-group">
+                <label for="jobDescription">Job Description</label>
+                <textarea id="jobDescription" name="job_description" rows="10" required
+                          placeholder="Paste the full job description here..."></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="personalStory">Your Story (optional)</label>
+                <textarea id="personalStory" name="story" rows="3"
+                          placeholder="What narrative do you want to emphasize? e.g., 'Leadership in early-stage startups'"></textarea>
+            </div>
+            
+            <div class="ai-model-select">
+                <label>AI Model</label>
+                <div class="model-options">
+                    <label class="model-option">
+                        <input type="radio" name="model_type" value="openai" checked>
+                        <span>GPT-4</span>
+                    </label>
+                    <label class="model-option">
+                        <input type="radio" name="model_type" value="deepseek">
+                        <span>DeepSeek</span>
+                    </label>
+                </div>
+            </div>
+            
+            <button type="submit" class="submit-button" id="optimizeButton">
+                <i class="fas fa-magic"></i>
+                <span>Optimize & Generate Resume</span>
+            </button>
+        </form>
+        
+        <div id="optimizeStatus" class="optimize-status" style="display: none;">
+            <div class="spinner"></div>
+            <p>AI is analyzing and optimizing your resume...</p>
+        </div>
+    </div>
 </div>
 
 <!-- New Job Modal -->
@@ -388,6 +460,174 @@
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
 }
+
+/* Resume Generation Panel */
+.resume-generation-panel {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    margin-bottom: 32px;
+    overflow: hidden;
+}
+
+.panel-header {
+    padding: 16px 24px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-default);
+}
+
+.panel-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.panel-content {
+    padding: 20px 24px;
+}
+
+.generation-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.gen-button {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    border-radius: var(--radius-md);
+    border: 2px solid var(--border-default);
+    background: var(--bg-tertiary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.gen-button i {
+    font-size: 1.5rem;
+}
+
+.gen-button div {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.gen-button strong {
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.gen-button span {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.gen-button.primary {
+    border-color: var(--accent-primary);
+}
+
+.gen-button.primary i {
+    color: var(--accent-primary);
+}
+
+.gen-button.primary:hover {
+    background: rgba(88, 166, 255, 0.1);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.gen-button.secondary:hover {
+    border-color: var(--accent-secondary);
+    transform: translateY(-2px);
+}
+
+.gen-button.secondary i {
+    color: var(--accent-secondary);
+}
+
+.modal-subtitle {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 24px;
+}
+
+.ai-model-select {
+    margin: 20px 0;
+}
+
+.ai-model-select label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.model-options {
+    display: flex;
+    gap: 12px;
+}
+
+.model-option {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border-default);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.model-option:hover {
+    border-color: var(--accent-primary);
+}
+
+.model-option input {
+    cursor: pointer;
+}
+
+.model-option:has(input:checked) {
+    border-color: var(--accent-primary);
+    background: rgba(88, 166, 255, 0.1);
+}
+
+.optimize-status {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 16px;
+    border: 4px solid var(--border-default);
+    border-top-color: var(--accent-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.optimize-status p {
+    color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+    .generation-options {
+        grid-template-columns: 1fr;
+    }
+}
 </style>
 
 <script>
@@ -542,6 +782,68 @@ function removePoint(button) {
     if (removeButtons.length === 1) {
         removeButtons[0].style.display = 'none';
     }
+}
+
+// ============================================
+// Resume Generation
+// ============================================
+
+function generateDefaultResume() {
+    // Generate resume with current order (no AI)
+    window.location.href = '/generate-pdf?mode=handcrafted';
+}
+
+function showAIOptimizeModal() {
+    document.getElementById('aiOptimizeModal').style.display = 'block';
+}
+
+function closeAIOptimizeModal() {
+    document.getElementById('aiOptimizeModal').style.display = 'none';
+    document.getElementById('aiOptimizeForm').reset();
+    document.getElementById('optimizeStatus').style.display = 'none';
+}
+
+function optimizeWithAI(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    // Show loading state
+    document.getElementById('optimizeButton').disabled = true;
+    document.getElementById('optimizeStatus').style.display = 'block';
+    
+    // Prepare data
+    const data = {
+        job_description: formData.get('job_description'),
+        story: formData.get('story') || '',
+        model_type: formData.get('model_type')
+    };
+    
+    // Call AI optimization endpoint
+    fetch('/optimize-resume', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            // AI optimization successful, now generate PDF
+            const modelType = formData.get('model_type');
+            window.location.href = `/generate-pdf?mode=ai&model_type=${modelType}`;
+        } else {
+            alert('AI optimization failed: ' + (result.error || 'Unknown error'));
+            document.getElementById('optimizeButton').disabled = false;
+            document.getElementById('optimizeStatus').style.display = 'none';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to optimize resume. Check console for details.');
+        document.getElementById('optimizeButton').disabled = false;
+        document.getElementById('optimizeStatus').style.display = 'none';
+    });
 }
 </script>
 {% endblock %}

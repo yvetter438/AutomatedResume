@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ user.full_name or 'Resume' }} - Resume</title>
+    <style>
+        /* ============================================
+           Professional Resume - Banking/Engineering Style
+           ============================================ */
+        
+        @import url('https://fonts.googleapis.com/css2?family=Charter:wght@400;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --color-text: #000000;
+            --color-text-light: #333333;
+            --color-link: #000000;
+            --color-border: #000000;
+            --font-main: 'Source Serif 4', 'Charter', Georgia, serif;
+        }
+        
+        html {
+            font-size: 10pt;
+        }
+        
+        body {
+            font-family: var(--font-main);
+            color: var(--color-text);
+            line-height: 1.35;
+            background: white;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .resume {
+            max-width: 8.5in;
+            margin: 0 auto;
+            padding: 0.5in 0.75in;
+            background: white;
+        }
+        
+        /* ============================================
+           Header - Centered name with contact line
+           ============================================ */
+        .header {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        
+        .name {
+            font-size: 24pt;
+            font-weight: 700;
+            color: var(--color-text);
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            line-height: 1.2;
+        }
+        
+        .contact-line {
+            font-size: 10pt;
+            color: var(--color-text);
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0;
+        }
+        
+        .contact-item {
+            display: inline;
+        }
+        
+        .contact-item a {
+            color: var(--color-link);
+            text-decoration: none;
+        }
+        
+        .contact-item a:hover {
+            text-decoration: underline;
+        }
+        
+        .separator {
+            margin: 0 8px;
+            color: var(--color-text);
+        }
+        
+        /* ============================================
+           Sections
+           ============================================ */
+        .section {
+            margin-bottom: 10px;
+        }
+        
+        .section-title {
+            font-size: 11pt;
+            font-weight: 700;
+            color: var(--color-text);
+            text-transform: none;
+            border-bottom: 1px solid var(--color-border);
+            padding-bottom: 2px;
+            margin-bottom: 8px;
+            margin-top: 12px;
+        }
+        
+        /* ============================================
+           Experience/Education Entries
+           ============================================ */
+        .entry {
+            margin-bottom: 10px;
+        }
+        
+        .entry:last-child {
+            margin-bottom: 0;
+        }
+        
+        .entry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 0;
+        }
+        
+        .entry-subheader {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 2px;
+        }
+        
+        .entry-title {
+            font-weight: 700;
+            font-size: 10pt;
+            color: var(--color-text);
+        }
+        
+        .entry-company {
+            font-weight: 400;
+            font-size: 10pt;
+            color: var(--color-text);
+        }
+        
+        .entry-location {
+            font-size: 10pt;
+            color: var(--color-text);
+            text-align: right;
+        }
+        
+        .entry-date {
+            font-size: 10pt;
+            color: var(--color-text);
+            white-space: nowrap;
+            text-align: right;
+        }
+        
+        /* Bullet Points */
+        .highlights {
+            list-style: disc;
+            padding-left: 20px;
+            margin: 4px 0 0 0;
+        }
+        
+        .highlights li {
+            font-size: 10pt;
+            line-height: 1.4;
+            margin-bottom: 2px;
+            padding-left: 2px;
+        }
+        
+        .highlights li:last-child {
+            margin-bottom: 0;
+        }
+        
+        /* ============================================
+           Education Section
+           ============================================ */
+        .education-entry {
+            margin-bottom: 8px;
+        }
+        
+        .entry-degree {
+            font-size: 10pt;
+            color: var(--color-text);
+        }
+        
+        .education-highlights {
+            list-style: disc;
+            padding-left: 20px;
+            margin: 2px 0 0 0;
+        }
+        
+        .education-highlights li {
+            font-size: 10pt;
+            line-height: 1.4;
+        }
+        
+        /* ============================================
+           Projects Section
+           ============================================ */
+        .project-entry {
+            margin-bottom: 10px;
+        }
+        
+        .project-link {
+            font-size: 10pt;
+            color: var(--color-text);
+            text-decoration: none;
+        }
+        
+        /* ============================================
+           Skills/Technologies Section
+           ============================================ */
+        .skills-entry {
+            margin-bottom: 6px;
+            font-size: 10pt;
+        }
+        
+        .skills-entry strong {
+            font-weight: 700;
+        }
+        
+        /* ============================================
+           Summary Section
+           ============================================ */
+        .summary-text {
+            font-size: 10pt;
+            line-height: 1.4;
+            color: var(--color-text);
+        }
+        
+        /* ============================================
+           Print Styles
+           ============================================ */
+        @media print {
+            html {
+                font-size: 10pt;
+            }
+            
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            .resume {
+                padding: 0;
+                max-width: none;
+            }
+            
+            .section {
+                page-break-inside: avoid;
+            }
+            
+            .entry {
+                page-break-inside: avoid;
+            }
+            
+            a {
+                color: var(--color-text) !important;
+            }
+        }
+        
+        @page {
+            size: letter;
+            margin: 0.5in 0.75in;
+        }
+        
+        /* ============================================
+           Preview Mode Styles (browser only)
+           ============================================ */
+        @media screen {
+            body {
+                background: #e8e8e8;
+                padding: 20px;
+            }
+            
+            .resume {
+                box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            }
+            
+            .preview-controls {
+                max-width: 8.5in;
+                margin: 0 auto 20px auto;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 12px 20px;
+                background: #1a1a1a;
+                border-radius: 6px;
+                color: white;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            }
+            
+            .preview-controls h2 {
+                font-size: 14px;
+                font-weight: 600;
+                margin: 0;
+            }
+            
+            .preview-controls .actions {
+                display: flex;
+                gap: 8px;
+            }
+            
+            .preview-controls button,
+            .preview-controls a {
+                padding: 8px 16px;
+                border: none;
+                border-radius: 4px;
+                font-size: 13px;
+                font-weight: 500;
+                cursor: pointer;
+                text-decoration: none;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                font-family: inherit;
+            }
+            
+            .btn-primary {
+                background: #2563eb;
+                color: white;
+            }
+            
+            .btn-secondary {
+                background: #374151;
+                color: white;
+            }
+            
+            .btn-primary:hover {
+                background: #1d4ed8;
+            }
+            
+            .btn-secondary:hover {
+                background: #4b5563;
+            }
+        }
+        
+        /* Hide preview controls when printing */
+        @media print {
+            .preview-controls {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% if preview %}
+    <div class="preview-controls">
+        <h2>Resume Preview</h2>
+        <div class="actions">
+            <button onclick="window.print()" class="btn-secondary">
+                Print
+            </button>
+            <a href="{{ url_for('download_resume_pdf') }}{% if application_id %}?application_id={{ application_id }}{% endif %}" class="btn-primary">
+                Download PDF
+            </a>
+            <a href="{{ url_for('index') }}" class="btn-secondary">
+                ← Back
+            </a>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="resume">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="name">{{ user.full_name or 'Your Name' }}</h1>
+            <div class="contact-line">
+                {% if user.email %}
+                <span class="contact-item"><a href="mailto:{{ user.email }}">{{ user.email }}</a></span>
+                {% endif %}
+                
+                {% if user.phone %}
+                <span class="separator">|</span>
+                <span class="contact-item">{{ user.phone }}</span>
+                {% endif %}
+                
+                {% if user.website_url %}
+                <span class="separator">|</span>
+                <span class="contact-item"><a href="{{ user.website_url }}">{{ user.website_url | replace('https://', '') | replace('http://', '') }}</a></span>
+                {% endif %}
+                
+                {% if user.linkedin_url %}
+                <span class="separator">|</span>
+                <span class="contact-item"><a href="{{ user.linkedin_url }}">{{ user.linkedin_url | replace('https://', '') | replace('http://', '') }}</a></span>
+                {% endif %}
+                
+                {% if user.github_url %}
+                <span class="separator">|</span>
+                <span class="contact-item"><a href="{{ user.github_url }}">{{ user.github_url | replace('https://', '') | replace('http://', '') }}</a></span>
+                {% endif %}
+                
+                {% if user.location %}
+                <span class="separator">|</span>
+                <span class="contact-item">{{ user.location }}</span>
+                {% endif %}
+            </div>
+        </header>
+        
+        <!-- Education Section -->
+        {% if education %}
+        <section class="section">
+            <h2 class="section-title">Education</h2>
+            {% for edu in education %}
+            <div class="education-entry">
+                <div class="entry-header">
+                    <span class="entry-title">{{ edu.school }}</span>
+                    <span class="entry-date">{{ edu.dates }}</span>
+                </div>
+                <div class="entry-subheader">
+                    <span class="entry-degree">{{ edu.degree }}</span>
+                    <span class="entry-location">{{ edu.location }}</span>
+                </div>
+                {% if edu.highlights %}
+                <ul class="education-highlights">
+                    {% for highlight in edu.highlights %}
+                    <li>{{ highlight }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </section>
+        {% endif %}
+        
+        <!-- Experience Section -->
+        {% if jobs %}
+        <section class="section">
+            <h2 class="section-title">Experience</h2>
+            
+            {% for job in jobs %}
+            <div class="entry">
+                <div class="entry-header">
+                    <span class="entry-title">{{ job.title }}</span>
+                    <span class="entry-location">{{ job.location }}</span>
+                </div>
+                <div class="entry-subheader">
+                    <span class="entry-company">{{ job.company }}</span>
+                    <span class="entry-date">{{ job.dates }}</span>
+                </div>
+                {% if job.points %}
+                <ul class="highlights">
+                    {% for point in job.points %}
+                    <li>{{ point }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </section>
+        {% endif %}
+        
+        <!-- Projects Section -->
+        {% if projects %}
+        <section class="section">
+            <h2 class="section-title">Projects</h2>
+            
+            {% for project in projects %}
+            <div class="project-entry">
+                <div class="entry-header">
+                    <span class="entry-title"><strong>{{ project.name }}</strong></span>
+                    {% if project.link %}
+                    <span class="entry-date"><a href="{{ project.link }}" class="project-link">{{ project.link | replace('https://', '') | replace('http://', '') }}</a></span>
+                    {% endif %}
+                </div>
+                {% if project.highlights %}
+                <ul class="highlights">
+                    {% for highlight in project.highlights %}
+                    <li>{{ highlight }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </section>
+        {% endif %}
+        
+        <!-- Technical Skills Section -->
+        {% if skills %}
+        <section class="section">
+            <h2 class="section-title">Technical Skills</h2>
+            {% for category, items in skills.items() %}
+            <div class="skills-entry">
+                <strong>{{ category }}:</strong> {{ items | join(', ') }}
+            </div>
+            {% endfor %}
+        </section>
+        {% endif %}
+        
+        <!-- Summary (optional - at bottom if included) -->
+        {% if user.my_story and show_summary %}
+        <section class="section">
+            <h2 class="section-title">Summary</h2>
+            <p class="summary-text">{{ user.my_story }}</p>
+        </section>
+        {% endif %}
+    </div>
+</body>
+</html>
+

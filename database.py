@@ -172,6 +172,26 @@ def init_db():
         )
     ''')
     
+    # ============================================
+    # Education
+    # ============================================
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS education (
+            id INTEGER PRIMARY KEY,
+            institution TEXT NOT NULL,
+            degree TEXT NOT NULL,
+            field_of_study TEXT,
+            location TEXT,
+            start_date TEXT,
+            end_date TEXT,
+            current BOOLEAN DEFAULT 0,
+            gpa TEXT,
+            description TEXT,
+            display_order INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
     # Check if resume_path column exists, if not add it
     c.execute("PRAGMA table_info(job_applications)")
     columns = [column[1] for column in c.fetchall()]
@@ -1058,6 +1078,113 @@ def get_all_tags():
     
     conn.close()
     return tags
+
+# ============================================
+# Education Functions
+# ============================================
+
+def get_all_education():
+    """Get all education entries"""
+    conn = sqlite3.connect('resume.db')
+    c = conn.cursor()
+    
+    c.execute('''
+        SELECT id, institution, degree, field_of_study, location,
+               start_date, end_date, current, gpa, description, display_order
+        FROM education
+        ORDER BY display_order, start_date DESC
+    ''')
+    
+    education = []
+    for row in c.fetchall():
+        edu = {
+            'id': row[0],
+            'institution': row[1],
+            'degree': row[2],
+            'field_of_study': row[3],
+            'location': row[4],
+            'dates': format_dates(row[5], row[6], row[7]) if row[5] else '',
+            'gpa': row[8],
+            'description': row[9],
+            'display_order': row[10]
+        }
+        education.append(edu)
+    
+    conn.close()
+    return education
+
+def add_education(institution, degree, field_of_study='', location='', 
+                  start_date='', end_date='', current=False, gpa='', description=''):
+    """Add new education entry"""
+    conn = sqlite3.connect('resume.db')
+    c = conn.cursor()
+    
+    # Get the next display order
+    c.execute('SELECT COALESCE(MAX(display_order), 0) + 1 FROM education')
+    next_order = c.fetchone()[0]
+    
+    c.execute('''
+        INSERT INTO education 
+        (institution, degree, field_of_study, location, start_date, end_date, 
+         current, gpa, description, display_order)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (institution, degree, field_of_study, location, start_date, end_date,
+          current, gpa, description, next_order))
+    
+    edu_id = c.lastrowid
+    conn.commit()
+    conn.close()
+    return edu_id
+
+def update_education(edu_id, **kwargs):
+    """Update education entry"""
+    conn = sqlite3.connect('resume.db')
+    c = conn.cursor()
+    
+    allowed_fields = ['institution', 'degree', 'field_of_study', 'location',
+                      'start_date', 'end_date', 'current', 'gpa', 'description']
+    
+    updates = []
+    values = []
+    
+    for field in allowed_fields:
+        if field in kwargs:
+            updates.append(f'{field} = ?')
+            values.append(kwargs[field])
+    
+    if updates:
+        values.append(edu_id)
+        c.execute(f'''
+            UPDATE education 
+            SET {', '.join(updates)}
+            WHERE id = ?
+        ''', values)
+    
+    conn.commit()
+    conn.close()
+
+def delete_education(edu_id):
+    """Delete education entry"""
+    conn = sqlite3.connect('resume.db')
+    c = conn.cursor()
+    c.execute('DELETE FROM education WHERE id = ?', (edu_id,))
+    conn.commit()
+    conn.close()
+
+def update_education_order(edu_orders):
+    """Update education display order"""
+    conn = sqlite3.connect('resume.db')
+    c = conn.cursor()
+    
+    if isinstance(edu_orders, dict):
+        edu_orders = [{'id': edu_id, 'order': order} for edu_id, order in edu_orders.items()]
+    
+    for edu in edu_orders:
+        c.execute('UPDATE education SET display_order = ? WHERE id = ?',
+                 (edu['order'], edu['id']))
+    
+    conn.commit()
+    conn.close()
 
 # Add this function to help with initialization
 def initialize_database():
